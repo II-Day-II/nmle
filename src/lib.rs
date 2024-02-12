@@ -16,7 +16,8 @@ pub async fn run() -> anyhow::Result<()> {
     env_logger::Builder::new()
         .filter_module("wgpu_core", log::LevelFilter::Warn)
         .filter_module("wgpu_hal", log::LevelFilter::Warn)
-        .filter_level(log::LevelFilter::max())
+        .filter_module("naga", log::LevelFilter::Debug)
+        .filter_level(log::LevelFilter::Debug)
         .init();
     test_logging();
 
@@ -41,12 +42,15 @@ pub async fn run() -> anyhow::Result<()> {
                 window_id,
             } if window_id == window.id() => {
                 elwt.exit();
-            },
+            }
             Event::WindowEvent {
                 event: WindowEvent::RedrawRequested,
                 window_id,
-            } if window_id == window.id() => {
-                state.draw();
+            } if window_id == window.id() => match state.draw() {
+                Ok(_) => {}
+                Err(wgpu::SurfaceError::Lost) => state.renderer.resize(state.renderer.size),
+                Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
+                Err(e) => error!("{}", e),
             },
             Event::AboutToWait => {
                 // TODO: determine if redraw needed
@@ -54,19 +58,21 @@ pub async fn run() -> anyhow::Result<()> {
                 if redraw_needed {
                     window.request_redraw();
                 }
-            },
-            Event::WindowEvent { window_id, event } if window_id == window.id() => if !state.mouse_input(&event) { 
-                match event {
-                    WindowEvent::Resized(new_size) => state.renderer.resize(new_size),
-                    WindowEvent::KeyboardInput { event, .. } => {
-                        // TODO: determine if the keyevent is enough or if we need 
-                        // the device_id and is_synthetic as well
-                        state.key_input(&event);
+            }
+            Event::WindowEvent { window_id, event } if window_id == window.id() => {
+                if !state.mouse_input(&event) {
+                    match event {
+                        WindowEvent::Resized(new_size) => state.renderer.resize(new_size),
+                        WindowEvent::KeyboardInput { event, .. } => {
+                            // TODO: determine if the keyevent is enough or if we need
+                            // the device_id and is_synthetic as well
+                            state.key_input(&event);
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
-            },
-            Event::DeviceEvent {event, ..} => {
+            }
+            Event::DeviceEvent { event, .. } => {
                 state.mouse_movement(&event);
             }
             _ => {}

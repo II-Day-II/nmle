@@ -1,10 +1,15 @@
 use log::debug;
 use std::sync::Arc;
 use wgpu::{
-    Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RequestAdapterOptions, Surface,
-    SurfaceConfiguration, TextureViewDescriptor, CommandEncoderDescriptor, RenderPassDescriptor, RenderPassColorAttachment,
+    include_wgsl, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor,
+    Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface,
+    SurfaceConfiguration, TextureViewDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
+
+use self::pipeline::Pipeline;
+
+mod pipeline;
 
 pub struct Renderer {
     _instance: Instance,
@@ -12,7 +17,9 @@ pub struct Renderer {
     queue: Queue,
     surface: Surface<'static>,
     config: SurfaceConfiguration,
-    size: PhysicalSize<u32>,
+    pub size: PhysicalSize<u32>,
+
+    default_pipeline: Pipeline,
 }
 
 impl Renderer {
@@ -24,10 +31,10 @@ impl Renderer {
             backends,
             ..Default::default()
         });
-        debug!("Renderer: Instance created");
+        debug!("Instance created");
         // safety: We own the window, and it is 'static. it lives long enough
         let surface = instance.create_surface(window).unwrap();
-        debug!("Renderer: Surface created");
+        debug!("Surface created");
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -36,7 +43,7 @@ impl Renderer {
             })
             .await
             .unwrap();
-        debug!("Renderer: Adapter acquired");
+        debug!("Adapter acquired");
         let (device, queue) = adapter
             .request_device(
                 &DeviceDescriptor {
@@ -48,7 +55,7 @@ impl Renderer {
             )
             .await
             .unwrap();
-        debug!("Renderer: Device and Queue acquired");
+        debug!("Device and Queue acquired");
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
@@ -70,9 +77,14 @@ impl Renderer {
             view_formats: vec![],
         };
         surface.configure(&device, &config);
-        debug!("Renderer: Surface configured");
+        debug!("Surface configured");
 
-        debug!("Renderer: Renderer initialized");
+        // TODO: move to GLSL shaders, wgsl is a mess
+        let shader = device.create_shader_module(include_wgsl!("../shaders/default.wgsl"));
+        let default_pipeline = Pipeline::new(&device, &shader, &config);
+        debug!("Default pipeline constructed");
+
+        debug!("Renderer initialized");
         Self {
             _instance: instance,
             device,
@@ -80,6 +92,8 @@ impl Renderer {
             surface,
             config,
             size,
+
+            default_pipeline,
         }
     }
 
@@ -91,29 +105,32 @@ impl Renderer {
             self.surface.configure(&self.device, &self.config)
         }
     }
-    pub fn render(&mut self) -> anyhow::Result<()> {
+    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output.texture.create_view(&TextureViewDescriptor::default());
-        let mut encoder = self.device.create_command_encoder(&CommandEncoderDescriptor::default());
+        let view = output
+            .texture
+            .create_view(&TextureViewDescriptor::default());
+        let mut encoder = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor::default());
         {
-            let _render_pass = encoder.begin_render_pass(
-                &RenderPassDescriptor {
-                    label: Some("Main renderpass"),
-                    color_attachments: &[
-                        Some(RenderPassColorAttachment{
-                            view: &view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                store: wgpu::StoreOp::Store,
-                            },
-                        }),
-                    ],
-                    depth_stencil_attachment: None, // TODO: add depth
-                    occlusion_query_set: None,
-                    timestamp_writes: None,
-                }
-            );
+            let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+                label: Some("Main renderpass"),
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None, // TODO: add depth
+                occlusion_query_set: None,
+                timestamp_writes: None,
+            });
+
+            render_pass.set_pipeline(&self.default_pipeline.pipeline);
+            render_pass.draw(0..3, 0..1);
         }
         self.queue.submit([encoder.finish()]);
         output.present();
