@@ -14,8 +14,8 @@ const TITLE: &str = "nmle - New Matrix Learning Engine";
 pub async fn run() -> anyhow::Result<()> {
     // init logging
     env_logger::Builder::new()
-        .filter_level(log::LevelFilter::Warn)
-        .filter_module(module_path!(), log::LevelFilter::max())
+        .filter_level(log::LevelFilter::Warn) // dependency log level
+        .filter_module(module_path!(), log::LevelFilter::Debug) // current application log level
         .init();
     test_logging();
 
@@ -70,8 +70,11 @@ pub async fn run() -> anyhow::Result<()> {
                     }
                 }
             }
-            Event::DeviceEvent { event, .. } => {
-                state.mouse_movement(&event);
+            Event::DeviceEvent {
+                event: DeviceEvent::MouseMotion { delta },
+                ..
+            } => {
+                state.mouse_movement(delta);
             }
             _ => {}
         }

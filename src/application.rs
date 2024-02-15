@@ -2,7 +2,7 @@ use crate::renderer::Renderer;
 use log::{debug, trace};
 use std::sync::Arc;
 use winit::{
-    event::{DeviceEvent, KeyEvent, WindowEvent},
+    event::{KeyEvent, WindowEvent},
     window::Window,
 };
 
@@ -55,13 +55,9 @@ impl ApplicationState {
             _ => false,
         }
     }
-    pub fn mouse_movement(&mut self, event: &DeviceEvent) {
-        match event {
-            DeviceEvent::MouseMotion { delta: (dx, dy) } => {
-                // TODO: handle mouse motion
-                trace!("Got mouse movement {}, {}", dx, dy);
-            }
-            _ => {}
-        }
+    pub fn mouse_movement(&mut self, delta: (f64, f64)) {
+        // TODO: handle mouse motion
+        let (dx, dy) = delta;
+        trace!("Got mouse movement {}, {}", dx, dy);
     }
 }

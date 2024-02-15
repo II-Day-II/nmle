@@ -1,13 +1,19 @@
 use log::debug;
 use std::sync::Arc;
 use wgpu::{
-    include_spirv, include_wgsl, BlendState, ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor
+    include_spirv, BlendState, ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor,
+    Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor,
+    RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::renderer::pipeline::PipelineBuilder;
+use self::pipeline::{Pipeline, PipelineBuilder};
 
-use self::pipeline::Pipeline;
+macro_rules! include_shader {
+    ($file:expr) => {
+        include_spirv!(concat!(env!("OUT_DIR"), $file))
+    };
+}
 
 mod pipeline;
 
@@ -79,9 +85,11 @@ impl Renderer {
         surface.configure(&device, &config);
         debug!("Surface configured");
 
-        // let shader = device.create_shader_module(include_wgsl!("../shaders/default.wgsl"));
-        let v_shader_spv = device.create_shader_module(include_spirv!("../shaders/default_glsl.vert.spv"));
-        let f_shader_spv = device.create_shader_module(include_spirv!("../shaders/default_glsl.frag.spv"));
+        // TODO: see if this works in web
+        let v_shader_spv =
+            device.create_shader_module(include_shader!("/shaders/default_glsl.vert.spv"));
+        let f_shader_spv =
+            device.create_shader_module(include_shader!("/shaders/default_glsl.frag.spv"));
         let mut builder = PipelineBuilder::new(&v_shader_spv, Some("main"));
         let default_pipeline = builder
             .with_fragment_shader(&f_shader_spv, Some("main"))
