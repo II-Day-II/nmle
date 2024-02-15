@@ -1,11 +1,11 @@
 use log::debug;
 use std::sync::Arc;
 use wgpu::{
-    include_wgsl, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor,
-    Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface,
-    SurfaceConfiguration, TextureViewDescriptor,
+    include_spirv, include_wgsl, BlendState, ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor
 };
 use winit::{dpi::PhysicalSize, window::Window};
+
+use crate::renderer::pipeline::PipelineBuilder;
 
 use self::pipeline::Pipeline;
 
@@ -79,9 +79,20 @@ impl Renderer {
         surface.configure(&device, &config);
         debug!("Surface configured");
 
-        // TODO: move to GLSL shaders, wgsl is a mess
-        let shader = device.create_shader_module(include_wgsl!("../shaders/default.wgsl"));
-        let default_pipeline = Pipeline::new(&device, &shader, &config);
+        // let shader = device.create_shader_module(include_wgsl!("../shaders/default.wgsl"));
+        let v_shader_spv = device.create_shader_module(include_spirv!("../shaders/default_glsl.vert.spv"));
+        let f_shader_spv = device.create_shader_module(include_spirv!("../shaders/default_glsl.frag.spv"));
+        let mut builder = PipelineBuilder::new(&v_shader_spv, Some("main"));
+        let default_pipeline = builder
+            .with_fragment_shader(&f_shader_spv, Some("main"))
+            .with_cull_mode(wgpu::Face::Back)
+            .add_fragment_target(Some(wgpu::ColorTargetState {
+                format: config.format,
+                blend: Some(BlendState::REPLACE),
+                write_mask: ColorWrites::ALL,
+            }))
+            .build(&device);
+
         debug!("Default pipeline constructed");
 
         debug!("Renderer initialized");

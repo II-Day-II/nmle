@@ -14,10 +14,8 @@ const TITLE: &str = "nmle - New Matrix Learning Engine";
 pub async fn run() -> anyhow::Result<()> {
     // init logging
     env_logger::Builder::new()
-        .filter_module("wgpu_core", log::LevelFilter::Warn)
-        .filter_module("wgpu_hal", log::LevelFilter::Warn)
-        .filter_module("naga", log::LevelFilter::Debug)
-        .filter_level(log::LevelFilter::Debug)
+        .filter_level(log::LevelFilter::Warn)
+        .filter_module(module_path!(), log::LevelFilter::max())
         .init();
     test_logging();
 
