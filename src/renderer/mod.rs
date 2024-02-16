@@ -108,10 +108,10 @@ impl Renderer {
 
         // Todo: get these from application, don't hardcode them in renderer
         let vertices = [
-            Vertex {position: Vec4::new(0.0,0.0,0.0,1.0), uv: Vec4::new(0.0,0.0,0.0,0.0)},
-            Vertex {position: Vec4::new(1.0,0.0,0.0,1.0), uv: Vec4::new(1.0,0.0,0.0,0.0)},
-            Vertex {position: Vec4::new(0.0,1.0,0.0,1.0), uv: Vec4::new(0.0,1.0,0.0,0.0)},
-            Vertex {position: Vec4::new(1.0,1.0,0.0,1.0), uv: Vec4::new(1.0,1.0,0.0,0.0)},
+            Vertex {position: Vec4::new(-0.5,-0.5,0.0,1.0), uv: Vec4::new(0.0,0.0,0.0,0.0)},
+            Vertex {position: Vec4::new(0.5,-0.5,0.0,1.0), uv: Vec4::new(1.0,0.0,0.0,0.0)},
+            Vertex {position: Vec4::new(-0.5,0.5,0.0,1.0), uv: Vec4::new(0.0,1.0,0.0,0.0)},
+            Vertex {position: Vec4::new(0.5,0.5,0.0,1.0), uv: Vec4::new(1.0,1.0,0.0,0.0)},
         ];
         let indices = [
             0,1,2,

@@ -24,6 +24,8 @@ pub async fn run() -> anyhow::Result<()> {
     let builder = WindowBuilder::new().with_title(TITLE);
     let window = builder.build(&event_loop)?;
     // TODO: wasm stuff
+    // try wasm-server-runner https://github.com/jakobhellermann/wasm-server-runner
+
 
     let window = Arc::new(window);
 
