@@ -6,8 +6,9 @@ use wgpu::{
     RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
+use vek::Vec4;
 
-use self::pipeline::{Pipeline, PipelineBuilder};
+use self::{pipeline::{Pipeline, PipelineBuilder}, renderable::{Vertex, Renderable}};
 
 macro_rules! include_shader {
     ($file:expr) => {
@@ -16,6 +17,7 @@ macro_rules! include_shader {
 }
 
 mod pipeline;
+mod renderable;
 
 pub struct Renderer {
     _instance: Instance,
@@ -26,6 +28,7 @@ pub struct Renderer {
     pub size: PhysicalSize<u32>,
 
     default_pipeline: Pipeline,
+    default_buffers: Renderable,
 }
 
 impl Renderer {
@@ -103,6 +106,19 @@ impl Renderer {
 
         debug!("Default pipeline constructed");
 
+        // Todo: get these from application, don't hardcode them in renderer
+        let vertices = [
+            Vertex {position: Vec4::new(0.0,0.0,0.0,1.0), uv: Vec4::new(0.0,0.0,0.0,0.0)},
+            Vertex {position: Vec4::new(1.0,0.0,0.0,1.0), uv: Vec4::new(1.0,0.0,0.0,0.0)},
+            Vertex {position: Vec4::new(0.0,1.0,0.0,1.0), uv: Vec4::new(0.0,1.0,0.0,0.0)},
+            Vertex {position: Vec4::new(1.0,1.0,0.0,1.0), uv: Vec4::new(1.0,1.0,0.0,0.0)},
+        ];
+        let indices = [
+            0,1,2,
+            1,3,2,
+        ];
+        let default_buffers = Renderable::new(&device, &vertices, &indices);
+
         debug!("Renderer initialized");
         Self {
             _instance: instance,
@@ -113,6 +129,7 @@ impl Renderer {
             size,
 
             default_pipeline,
+            default_buffers,
         }
     }
 
@@ -149,7 +166,7 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.default_pipeline.pipeline);
-            render_pass.draw(0..3, 0..1);
+            self.default_buffers.draw(&mut render_pass);
         }
         self.queue.submit([encoder.finish()]);
         output.present();

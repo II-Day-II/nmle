@@ -1,8 +1,8 @@
 use wgpu::{
-    ColorTargetState, DepthStencilState, Device, Face, FragmentState, FrontFace, MultisampleState,
-    PipelineLayout, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology,
-    RenderPipeline, RenderPipelineDescriptor, ShaderModule, VertexState,
+    ColorTargetState, DepthStencilState, Device, Face, FragmentState, FrontFace, MultisampleState, PipelineLayout, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor, ShaderModule, VertexBufferLayout, VertexState
 };
+
+use super::renderable::Vertex;
 
 pub struct PipelineBuilder<'a> {
     pipeline_layout_descriptor: PipelineLayoutDescriptor<'a>,
@@ -13,6 +13,7 @@ pub struct PipelineBuilder<'a> {
 #[allow(dead_code)]
 impl<'a> PipelineBuilder<'a> {
     pub fn new(vertex_shader: &'a ShaderModule, vtx_entry_point: Option<&'a str>) -> Self {
+        const VTX_LAYOUT: VertexBufferLayout = Vertex::desc();
         let pipeline_layout_descriptor = PipelineLayoutDescriptor {
             label: Some("PipelineLayout"),
             bind_group_layouts: &[],   // TODO: get bind group layouts in here
@@ -24,7 +25,7 @@ impl<'a> PipelineBuilder<'a> {
             vertex: VertexState {
                 module: vertex_shader,
                 entry_point: vtx_entry_point.unwrap_or("vs_main"),
-                buffers: &[], // TODO: get vtx buffers in here
+                buffers: &[VTX_LAYOUT], 
             },
             primitive: PrimitiveState {
                 // TODO: allow modification of more of this

@@ -33,14 +33,20 @@ fn main() {
                 .join("shaders")
                 .join(filename)
                 .with_extension(ext_spv);
-            let status = Command::new("glslangValidator")
+            let glslang_validator_output = Command::new("glslangValidator")
                 .arg("-V")
                 .arg(file.path())
                 .arg("-o")
                 .arg(out_file)
-                .status()
+                .output()
                 .expect("failed to run glslangValidator");
-            println!("glslangValidator finished with exit code {}", status);
+            let status = glslang_validator_output.status;
+            if !status.success() {
+                unsafe {
+                    panic!("glslangValidator: {}\n{}", String::from_utf8_unchecked(glslang_validator_output.stderr), String::from_utf8_unchecked(glslang_validator_output.stdout));
+                }
+            }
+            println!("glslangValidator exited with code {}", status);
         } else {
             eprintln!("Failed to find a file, {:?}", shader_file);
         }

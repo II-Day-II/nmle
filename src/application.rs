@@ -41,6 +41,7 @@ impl ApplicationState {
             }
         }
     }
+    // handle a window event related to the mouse. Return true if the event was handled, false if it should be done in the event loop
     pub fn mouse_input(&mut self, event: &WindowEvent) -> bool {
         // TODO: handle mouse input
         match event {
@@ -52,9 +53,15 @@ impl ApplicationState {
                 debug!("Got mousewheel delta {:?}", delta);
                 true
             }
+            // Need to handle mouse movement here as well in order to keep track of where the mouse is.
+            WindowEvent::CursorMoved { position, .. } => {
+                trace!("Mouse moved to {:?}", position);
+                true
+            }
             _ => false,
         }
     }
+    // handle raw physical movement of the mouse.
     pub fn mouse_movement(&mut self, delta: (f64, f64)) {
         // TODO: handle mouse motion
         let (dx, dy) = delta;
