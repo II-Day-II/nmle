@@ -25,7 +25,7 @@ impl Vertex {
 }
 
 pub struct Renderable {
-    pub pipeline_tag: String,
+    pub pass_name: String,
     vtx_buffer: wgpu::Buffer,
     idx_buffer: wgpu::Buffer,
     num_indices: u32,
@@ -36,7 +36,7 @@ impl Renderable {
         device: &Device,
         vertices: &[Vertex],
         indices: &[u16],
-        pipeline_tag: String,
+        pass_name: String,
     ) -> Self {
         let num_indices = indices.len() as u32;
         let vtx_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -50,7 +50,7 @@ impl Renderable {
             usage: BufferUsages::INDEX,
         });
         Self {
-            pipeline_tag,
+            pass_name,
             vtx_buffer,
             idx_buffer,
             num_indices,

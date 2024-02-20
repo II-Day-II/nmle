@@ -1,22 +1,16 @@
 use log::debug;
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
-    include_spirv, BlendState, ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor,
-    Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor,
-    RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor,
+ CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
 use super::{
-    pipeline::{Pipeline, PipelineBuilder},
     renderable::{Renderable, Vertex},
+    pass::DefaultPass,
 };
 
-macro_rules! include_shader {
-    ($file:expr) => {
-        include_spirv!(concat!(env!("OUT_DIR"), $file))
-    };
-}
+
 
 pub struct Renderer {
     _instance: Instance,
@@ -26,14 +20,16 @@ pub struct Renderer {
     config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
 
-    pipelines: HashMap<String, Pipeline>,
     renderables: HashMap<String, Renderable>,
+    passes: HashMap<String, DefaultPass>,
 }
 
 impl Renderer {
     pub async fn new(window: Arc<Window>) -> Self {
         let size = window.inner_size();
-
+        let renderables = HashMap::new();
+        let mut passes = HashMap::new();
+        
         let backends = wgpu::Backends::PRIMARY;
         let instance = Instance::new(InstanceDescriptor {
             backends,
@@ -87,28 +83,9 @@ impl Renderer {
         surface.configure(&device, &config);
         debug!("Surface configured");
 
-        // TODO: see if this works in web
-        let v_shader_spv =
-            device.create_shader_module(include_shader!("/shaders/default_glsl.vert.spv"));
-        let f_shader_spv =
-            device.create_shader_module(include_shader!("/shaders/default_glsl.frag.spv"));
-        let mut builder = PipelineBuilder::new(&v_shader_spv, Some("main"));
-        let default_pipeline = builder
-            .with_fragment_shader(&f_shader_spv, Some("main"))
-            .with_cull_mode(wgpu::Face::Back)
-            .add_fragment_target(Some(wgpu::ColorTargetState {
-                format: config.format,
-                blend: Some(BlendState::REPLACE),
-                write_mask: ColorWrites::ALL,
-            }))
-            .build(&device);
-
-        let mut pipelines = HashMap::new();
-        pipelines.insert("default".into(), default_pipeline);
-        debug!("Default pipeline constructed");
-
-        let renderables = HashMap::new();
-
+        let default_pass = DefaultPass::new(&device, &config);
+        passes.insert("default".into(), default_pass);
+        
         debug!("Renderer initialized");
         Self {
             _instance: instance,
@@ -118,16 +95,13 @@ impl Renderer {
             config,
             size,
 
-            pipelines,
             renderables,
+            passes,
         }
     }
 
-    pub fn _add_pipeline(&mut self, pipeline_builder: &mut PipelineBuilder, pipeline_tag: String) {
-        let pipeline = pipeline_builder.build(&self.device);
-        debug!("New pipeline {} added", pipeline_tag);
-        self.pipelines.insert(pipeline_tag, pipeline);
-    }
+
+
 
     pub fn add_renderable(
         &mut self,
@@ -145,6 +119,8 @@ impl Renderer {
             Renderable::new(&self.device, vertices, indices, pipeline_tag),
         );
     }
+
+
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
@@ -180,10 +156,11 @@ impl Renderer {
             });
 
             // issue drawcalls
-            for renderable in self.renderables.values() {
-                let pipeline = &self.pipelines[&renderable.pipeline_tag];
-                render_pass.set_pipeline(&pipeline.pipeline);
-                renderable.draw(&mut render_pass);
+            for pass_name in self.passes.keys() {
+                let renderables = self.renderables.values().filter(|x| &x.pass_name == pass_name);
+                if let Some(pass) = self.passes.get(pass_name) {
+                    pass.draw(&mut render_pass, renderables)?;
+                }
             }
         }
         self.queue.submit([encoder.finish()]);

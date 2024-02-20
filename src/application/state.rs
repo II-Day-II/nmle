@@ -1,4 +1,5 @@
 use crate::renderer::{Renderer, Vertex};
+use super::camera::Camera;
 use log::{debug, trace};
 use std::sync::Arc;
 use vek::Vec4;
@@ -8,6 +9,7 @@ use winit::{
 };
 
 pub struct ApplicationState {
+    camera: Camera,
     pub renderer: Renderer,
 }
 
@@ -34,8 +36,9 @@ impl ApplicationState {
         ];
         let indices = [0, 1, 2, 1, 3, 2];
         renderer.add_renderable("default_rect".into(), "default".into(), &indices, &vertices);
+        let camera = Camera::new();
         debug!("Application state initialized");
-        Self { renderer }
+        Self { renderer, camera }
     }
     pub fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
         // TODO: update renderer buffers and such
