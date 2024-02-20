@@ -26,7 +26,6 @@ pub async fn run() -> anyhow::Result<()> {
     // TODO: wasm stuff
     // try wasm-server-runner https://github.com/jakobhellermann/wasm-server-runner
 
-
     let window = Arc::new(window);
 
     let mut state = application::ApplicationState::new(window.clone()).await;

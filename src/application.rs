@@ -1,6 +1,7 @@
-use crate::renderer::Renderer;
+use crate::renderer::{Renderer, Vertex};
 use log::{debug, trace};
 use std::sync::Arc;
+use vek::Vec4;
 use winit::{
     event::{KeyEvent, WindowEvent},
     window::Window,
@@ -12,9 +13,29 @@ pub struct ApplicationState {
 
 impl ApplicationState {
     pub async fn new(window: Arc<Window>) -> Self {
-        Self {
-            renderer: Renderer::new(window).await,
-        }
+        let mut renderer = Renderer::new(window).await;
+        let vertices = [
+            Vertex {
+                position: Vec4::new(-0.5, -0.5, 0.0, 1.0),
+                uv: Vec4::new(0.0, 0.0, 0.0, 0.0),
+            },
+            Vertex {
+                position: Vec4::new(0.5, -0.5, 0.0, 1.0),
+                uv: Vec4::new(1.0, 0.0, 0.0, 0.0),
+            },
+            Vertex {
+                position: Vec4::new(-0.5, 0.5, 0.0, 1.0),
+                uv: Vec4::new(0.0, 1.0, 0.0, 0.0),
+            },
+            Vertex {
+                position: Vec4::new(0.5, 0.5, 0.0, 1.0),
+                uv: Vec4::new(1.0, 1.0, 0.0, 0.0),
+            },
+        ];
+        let indices = [0, 1, 2, 1, 3, 2];
+        renderer.add_renderable("default_rect".into(), "default".into(), &indices, &vertices);
+        debug!("Application state initialized");
+        Self { renderer }
     }
     pub fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
         // TODO: update renderer buffers and such
@@ -32,7 +53,7 @@ impl ApplicationState {
             state,
             ..
         } = event;
-        debug!("Got key event {:?}", event);
+        trace!("Got key event {:?}", event);
         match physical_key {
             _ => {
                 if state.is_pressed() {
@@ -46,11 +67,11 @@ impl ApplicationState {
         // TODO: handle mouse input
         match event {
             WindowEvent::MouseInput { state, button, .. } => {
-                debug!("Got mouse input {:?}, {:?}", button, state);
+                trace!("Got mouse input {:?}, {:?}", button, state);
                 true
             }
             WindowEvent::MouseWheel { delta, .. } => {
-                debug!("Got mousewheel delta {:?}", delta);
+                trace!("Got mousewheel delta {:?}", delta);
                 true
             }
             // Need to handle mouse movement here as well in order to keep track of where the mouse is.

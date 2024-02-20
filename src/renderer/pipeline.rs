@@ -1,5 +1,7 @@
 use wgpu::{
-    ColorTargetState, DepthStencilState, Device, Face, FragmentState, FrontFace, MultisampleState, PipelineLayout, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor, ShaderModule, VertexBufferLayout, VertexState
+    ColorTargetState, DepthStencilState, Device, Face, FragmentState, FrontFace, MultisampleState,
+    PipelineLayout, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology,
+    RenderPipeline, RenderPipelineDescriptor, ShaderModule, VertexBufferLayout, VertexState,
 };
 
 use super::renderable::Vertex;
@@ -25,7 +27,7 @@ impl<'a> PipelineBuilder<'a> {
             vertex: VertexState {
                 module: vertex_shader,
                 entry_point: vtx_entry_point.unwrap_or("vs_main"),
-                buffers: &[VTX_LAYOUT], 
+                buffers: &[VTX_LAYOUT],
             },
             primitive: PrimitiveState {
                 // TODO: allow modification of more of this

@@ -43,7 +43,11 @@ fn main() {
             let status = glslang_validator_output.status;
             if !status.success() {
                 unsafe {
-                    panic!("glslangValidator: {}\n{}", String::from_utf8_unchecked(glslang_validator_output.stderr), String::from_utf8_unchecked(glslang_validator_output.stdout));
+                    panic!(
+                        "glslangValidator: {}\n{}",
+                        String::from_utf8_unchecked(glslang_validator_output.stderr),
+                        String::from_utf8_unchecked(glslang_validator_output.stdout)
+                    );
                 }
             }
             println!("glslangValidator exited with code {}", status);
