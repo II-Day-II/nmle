@@ -1,7 +1,7 @@
-use log::debug;
+use log::{debug, warn};
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
- CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor
+ util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -22,13 +22,15 @@ pub struct Renderer {
 
     renderables: HashMap<String, Renderable>,
     passes: HashMap<String, DefaultPass>,
+    global_buffers: HashMap<String, Buffer>,
 }
 
 impl Renderer {
     pub async fn new(window: Arc<Window>) -> Self {
         let size = window.inner_size();
         let renderables = HashMap::new();
-        let mut passes = HashMap::new();
+        let passes = HashMap::new();
+        let buffers = HashMap::new();
         
         let backends = wgpu::Backends::PRIMARY;
         let instance = Instance::new(InstanceDescriptor {
@@ -83,8 +85,8 @@ impl Renderer {
         surface.configure(&device, &config);
         debug!("Surface configured");
 
-        let default_pass = DefaultPass::new(&device, &config);
-        passes.insert("default".into(), default_pass);
+        // let default_pass = DefaultPass::new(&device, &config);
+        // passes.insert("default".into(), default_pass);
         
         debug!("Renderer initialized");
         Self {
@@ -97,11 +99,28 @@ impl Renderer {
 
             renderables,
             passes,
+            global_buffers: buffers,
         }
     }
 
+    pub fn add_global_buffer(&mut self, name: String, data: &[u8], usage: BufferUsages) {
+        let buffer = self.device.create_buffer_init(&BufferInitDescriptor{
+            label: Some(name.as_str()),
+            contents: data,
+            usage,
+        });
+        self.global_buffers.insert(name, buffer);
+    }
+    pub fn write_buffer(&mut self, name: &str, data: &[u8]) {
+        if let Some(buffer) = self.global_buffers.get(name) {
+            self.queue.write_buffer(buffer, 0, data);
+        }
+    }
 
-
+    pub fn add_pass(&mut self, name: String) {
+        let pass = DefaultPass::new(&self.device, &self.config, &self.global_buffers);
+        self.passes.insert(name, pass);
+    }
 
     pub fn add_renderable(
         &mut self,
@@ -159,7 +178,10 @@ impl Renderer {
             for pass_name in self.passes.keys() {
                 let renderables = self.renderables.values().filter(|x| &x.pass_name == pass_name);
                 if let Some(pass) = self.passes.get(pass_name) {
+                    // debug!("drawing {} renderables with pass {}", renderables.collect::<Vec<_>>().len(), pass_name);
                     pass.draw(&mut render_pass, renderables)?;
+                } else {
+                    warn!("pass with name {} does not exist!", pass_name);
                 }
             }
         }

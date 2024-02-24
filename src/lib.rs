@@ -29,12 +29,15 @@ pub async fn run() -> anyhow::Result<()> {
     let window = Arc::new(window);
 
     let mut state = application::ApplicationState::new(window.clone()).await;
+    let mut start_time = instant::Instant::now();
 
     // TODO: determine if this is needed
     event_loop.set_control_flow(ControlFlow::Wait);
-
     // run the event loop
     event_loop.run(move |e_event, elwt| {
+        let now = instant::Instant::now();
+        let delta = now - start_time;
+        start_time = now;
         match e_event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -56,6 +59,7 @@ pub async fn run() -> anyhow::Result<()> {
                 let redraw_needed = true;
                 if redraw_needed {
                     window.request_redraw();
+                    state.update(delta.as_secs_f64());
                 }
             }
             Event::WindowEvent { window_id, event } if window_id == window.id() => {
