@@ -1,5 +1,8 @@
 use wgpu::{
-    BindGroupLayout, ColorTargetState, DepthStencilState, Device, Face, FragmentState, FrontFace, MultisampleState, PipelineLayout, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor, ShaderModule, VertexBufferLayout, VertexState
+    BindGroupLayout, ColorTargetState, DepthStencilState, Device, Face, FragmentState, FrontFace,
+    MultisampleState, PipelineLayout, PipelineLayoutDescriptor, PolygonMode, PrimitiveState,
+    PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor, ShaderModule, VertexBufferLayout,
+    VertexState,
 };
 
 use super::renderable::Vertex;
@@ -94,7 +97,7 @@ impl<'a> PipelineBuilder<'a> {
         self
     }
     pub fn build(&mut self, device: &Device) -> Pipeline {
-        // TODO: try to get out of cloning ig 
+        // TODO: try to get out of cloning ig
         let mut layout_descriptor = self.pipeline_layout_descriptor.clone(); // probably suboptimal
         layout_descriptor.bind_group_layouts = &self.bind_group_layouts;
         let layout = device.create_pipeline_layout(&layout_descriptor);

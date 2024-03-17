@@ -1,10 +1,16 @@
 use std::collections::HashMap;
 
 use log::debug;
-use wgpu::{include_spirv, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState, Buffer, BufferBindingType, BufferUsages, ColorWrites, Device, RenderPass, ShaderStages, SurfaceConfiguration};
+use wgpu::{
+    include_spirv, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingType, BlendState, Buffer, BufferBindingType, BufferUsages,
+    ColorWrites, Device, RenderPass, ShaderStages, SurfaceConfiguration,
+};
 
-
-use super::{pipeline::{PipelineBuilder, Pipeline}, renderable::Renderable};
+use super::{
+    pipeline::{Pipeline, PipelineBuilder},
+    renderable::Renderable,
+};
 
 macro_rules! include_shader {
     ($file:expr) => {
@@ -17,47 +23,57 @@ pub struct DefaultPass {
 }
 
 impl DefaultPass {
-    pub fn new(device: &Device, config: &SurfaceConfiguration, buffers: &HashMap<String, Buffer>) -> Self {
-
+    pub fn new(
+        device: &Device,
+        config: &SurfaceConfiguration,
+        buffers: &HashMap<String, Buffer>,
+    ) -> Self {
         let mut bind_groups = Vec::new();
-        let layout_entries = buffers.values().enumerate().map(|(i, buf)| {
-            BindGroupLayoutEntry {
-                binding: i as u32, 
-                visibility: ShaderStages::VERTEX_FRAGMENT, // TODO: reduce,
-                ty: BindingType::Buffer { 
-                    ty: if buf.usage().contains(BufferUsages::UNIFORM) {
-                        BufferBindingType::Uniform 
-                    } else {
-                        unimplemented!("deal with storage buffers in bindgroupLayoutEntry")
+        let layout_entries = buffers
+            .values()
+            .enumerate()
+            .map(|(i, buf)| {
+                BindGroupLayoutEntry {
+                    binding: i as u32,
+                    visibility: ShaderStages::VERTEX_FRAGMENT, // TODO: reduce,
+                    ty: BindingType::Buffer {
+                        ty: if buf.usage().contains(BufferUsages::UNIFORM) {
+                            BufferBindingType::Uniform
+                        } else {
+                            unimplemented!("deal with storage buffers in bindgroupLayoutEntry")
+                        },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    has_dynamic_offset: false,
-                    min_binding_size: None 
-                },
-                count: None,
-            }
-        }).collect::<Vec<_>>();
-        let bindgroup_entries = buffers.values().enumerate().map(|(i, buf)| {
-            BindGroupEntry{
+                    count: None,
+                }
+            })
+            .collect::<Vec<_>>();
+        let bindgroup_entries = buffers
+            .values()
+            .enumerate()
+            .map(|(i, buf)| BindGroupEntry {
                 binding: i as u32,
                 resource: buf.as_entire_binding(),
-            }
-        }).collect::<Vec<_>>();
+            })
+            .collect::<Vec<_>>();
 
         // TODO: see if this works in web
         let v_shader_spv =
             device.create_shader_module(include_shader!("/shaders/default_glsl.vert.spv"));
         let f_shader_spv =
             device.create_shader_module(include_shader!("/shaders/default_glsl.frag.spv"));
-        let default_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor{
-            label: Some("default bind group"),
-            entries: &layout_entries,
-            // &[BindGroupLayoutEntry {
-            //     binding: 0,
-            //     visibility: ShaderStages::VERTEX,
-            //     ty: BindingType::Buffer { ty: BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-            //     count: None,
-            // }]
-        });
+        let default_bind_group_layout =
+            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+                label: Some("default bind group"),
+                entries: &layout_entries,
+                // &[BindGroupLayoutEntry {
+                //     binding: 0,
+                //     visibility: ShaderStages::VERTEX,
+                //     ty: BindingType::Buffer { ty: BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                //     count: None,
+                // }]
+            });
         // TODO: implement bind groups properly
         let mut builder = PipelineBuilder::new(&v_shader_spv, Some("main"));
         let pipeline = builder
@@ -71,15 +87,14 @@ impl DefaultPass {
             .add_bind_group_layout(&default_bind_group_layout)
             .build(&device);
 
-        
-        let default_bind_group = device.create_bind_group(&BindGroupDescriptor{
+        let default_bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("Default BindGroup"),
             layout: &default_bind_group_layout,
             entries: &bindgroup_entries,
             // &[BindGroupEntry{
             //     binding: 0,
             //     resource: BindingResource::Buffer(BufferBinding{
-            //         buffer: &buffers[0], 
+            //         buffer: &buffers[0],
             //         offset: 0,
             //         size: None,
             //     })
@@ -93,11 +108,13 @@ impl DefaultPass {
         }
     }
     pub fn draw<'a, 'b>(
-            &'a self,
-            render_pass: &mut RenderPass<'b>,
-            renderables: impl Iterator<Item = &'a Renderable>
-        ) -> Result<(), wgpu::SurfaceError> 
-        where 'a : 'b {
+        &'a self,
+        render_pass: &mut RenderPass<'b>,
+        renderables: impl Iterator<Item = &'a Renderable>,
+    ) -> Result<(), wgpu::SurfaceError>
+    where
+        'a: 'b,
+    {
         // 1. set the pipeline
         render_pass.set_pipeline(&self.pipeline.pipeline);
         // 2. set the bind groups
@@ -108,7 +125,7 @@ impl DefaultPass {
         for renderable in renderables {
             renderable.draw(render_pass);
         }
-        
+
         Ok(())
     }
 }

@@ -32,12 +32,7 @@ pub struct Renderable {
 }
 
 impl Renderable {
-    pub fn new(
-        device: &Device,
-        vertices: &[Vertex],
-        indices: &[u16],
-        pass_name: String,
-    ) -> Self {
+    pub fn new(device: &Device, vertices: &[Vertex], indices: &[u16], pass_name: String) -> Self {
         let num_indices = indices.len() as u32;
         let vtx_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("VertexBuffer"),

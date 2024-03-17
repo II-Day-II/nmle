@@ -1,16 +1,17 @@
 use log::{debug, warn};
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
- util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor
+    util::{BufferInitDescriptor, DeviceExt},
+    Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance,
+    InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor,
+    RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
 use super::{
-    renderable::{Renderable, Vertex},
     pass::DefaultPass,
+    renderable::{Renderable, Vertex},
 };
-
-
 
 pub struct Renderer {
     _instance: Instance,
@@ -31,7 +32,7 @@ impl Renderer {
         let renderables = HashMap::new();
         let passes = HashMap::new();
         let buffers = HashMap::new();
-        
+
         let backends = wgpu::Backends::PRIMARY;
         let instance = Instance::new(InstanceDescriptor {
             backends,
@@ -87,7 +88,7 @@ impl Renderer {
 
         // let default_pass = DefaultPass::new(&device, &config);
         // passes.insert("default".into(), default_pass);
-        
+
         debug!("Renderer initialized");
         Self {
             _instance: instance,
@@ -103,8 +104,12 @@ impl Renderer {
         }
     }
 
+    pub fn aspect(&self) -> f32 {
+        self.size.width as f32 / self.size.height as f32
+    }
+
     pub fn add_global_buffer(&mut self, name: String, data: &[u8], usage: BufferUsages) {
-        let buffer = self.device.create_buffer_init(&BufferInitDescriptor{
+        let buffer = self.device.create_buffer_init(&BufferInitDescriptor {
             label: Some(name.as_str()),
             contents: data,
             usage,
@@ -138,8 +143,6 @@ impl Renderer {
             Renderable::new(&self.device, vertices, indices, pipeline_tag),
         );
     }
-
-
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
@@ -176,7 +179,10 @@ impl Renderer {
 
             // issue drawcalls
             for pass_name in self.passes.keys() {
-                let renderables = self.renderables.values().filter(|x| &x.pass_name == pass_name);
+                let renderables = self
+                    .renderables
+                    .values()
+                    .filter(|x| &x.pass_name == pass_name);
                 if let Some(pass) = self.passes.get(pass_name) {
                     // debug!("drawing {} renderables with pass {}", renderables.collect::<Vec<_>>().len(), pass_name);
                     pass.draw(&mut render_pass, renderables)?;
