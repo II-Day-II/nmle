@@ -1,3 +1,4 @@
+mod gui_renderer;
 mod pass;
 mod pipeline;
 mod renderable;

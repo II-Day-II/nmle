@@ -8,6 +8,9 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.79"
 bytemuck = {version = "1.14.3", features = ["derive"]}
+egui = "0.26.2"
+egui-wgpu = "0.26.2"
+egui-winit = "0.26.2"
 env_logger = "0.11.1"
 instant = "0.1.12"
 log = "0.4.20"

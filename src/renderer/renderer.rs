@@ -1,3 +1,4 @@
+use egui_wgpu::ScreenDescriptor;
 use log::{debug, warn};
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
@@ -9,17 +10,21 @@ use wgpu::{
 use winit::{dpi::PhysicalSize, window::Window};
 
 use super::{
+    gui_renderer::GuiRenderer,
     pass::DefaultPass,
     renderable::{Renderable, Vertex},
 };
 
 pub struct Renderer {
     _instance: Instance,
+    pub window: Arc<Window>,
     device: Device,
     queue: Queue,
     surface: Surface<'static>,
     config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
+
+    pub gui_renderer: GuiRenderer,
 
     renderables: HashMap<String, Renderable>,
     passes: HashMap<String, DefaultPass>,
@@ -39,8 +44,7 @@ impl Renderer {
             ..Default::default()
         });
         debug!("Instance created");
-        // safety: We own the window, and it is 'static. it lives long enough
-        let surface = instance.create_surface(window).unwrap();
+        let surface = instance.create_surface(window.clone()).unwrap();
         debug!("Surface created");
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
@@ -89,14 +93,19 @@ impl Renderer {
         // let default_pass = DefaultPass::new(&device, &config);
         // passes.insert("default".into(), default_pass);
 
+        let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
+
         debug!("Renderer initialized");
         Self {
             _instance: instance,
+            window,
             device,
             queue,
             surface,
             config,
             size,
+
+            gui_renderer,
 
             renderables,
             passes,
@@ -161,6 +170,7 @@ impl Renderer {
         let mut encoder = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor::default());
+        // main pass
         {
             let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("Main renderpass"),
@@ -191,6 +201,20 @@ impl Renderer {
                 }
             }
         }
+        // gui pass
+        let screen_desc = ScreenDescriptor {
+            size_in_pixels: [self.config.width, self.config.height],
+            pixels_per_point: self.window.scale_factor() as f32,
+        };
+        self.gui_renderer.draw(
+            &self.device,
+            &self.queue,
+            &mut encoder,
+            &view,
+            &self.window,
+            screen_desc,
+        );
+
         self.queue.submit([encoder.finish()]);
         output.present();
         Ok(())

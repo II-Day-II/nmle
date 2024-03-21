@@ -35,53 +35,43 @@ pub async fn run() -> anyhow::Result<()> {
     event_loop.set_control_flow(ControlFlow::Wait);
     // run the event loop
     event_loop.run(move |e_event, elwt| {
+        // timing
         let now = instant::Instant::now();
         let delta = now - start_time;
         start_time = now;
-        match e_event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                window_id,
-            } if window_id == window.id() => {
-                elwt.exit();
-            }
-            Event::WindowEvent {
-                event: WindowEvent::RedrawRequested,
-                window_id,
-            } if window_id == window.id() => match state.draw() {
-                Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => state.renderer.resize(state.renderer.size),
-                Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
-                Err(e) => error!("{}", e),
-            },
-            Event::AboutToWait => {
-                // TODO: determine if redraw needed
-                let redraw_needed = true;
-                if redraw_needed {
-                    window.request_redraw();
-                    state.update(delta.as_secs_f64());
+        // deal with input
+        if !state.handle_event_input(&window, &e_event) {
+            // TODO: find out if you can skip all the id == id checks without nested match
+            match e_event {
+                Event::WindowEvent {
+                    event: WindowEvent::CloseRequested,
+                    window_id,
+                } if window_id == window.id() => {
+                    elwt.exit();
                 }
-            }
-            Event::WindowEvent { window_id, event } if window_id == window.id() => {
-                if !state.mouse_input(&event) {
-                    match event {
-                        WindowEvent::Resized(new_size) => state.renderer.resize(new_size),
-                        WindowEvent::KeyboardInput { event, .. } => {
-                            // TODO: determine if the keyevent is enough or if we need
-                            // the device_id and is_synthetic as well
-                            state.key_input(&event);
-                        }
-                        _ => {}
+                Event::WindowEvent {
+                    event: WindowEvent::RedrawRequested,
+                    window_id,
+                } if window_id == window.id() => match state.draw() {
+                    Ok(_) => {}
+                    Err(wgpu::SurfaceError::Lost) => state.renderer.resize(state.renderer.size),
+                    Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
+                    Err(e) => error!("{}", e),
+                },
+                Event::WindowEvent {
+                    event: WindowEvent::Resized(new_size),
+                    window_id,
+                } if window_id == window.id() => state.renderer.resize(new_size),
+                Event::AboutToWait => {
+                    // TODO: determine if redraw needed
+                    let redraw_needed = true;
+                    if redraw_needed {
+                        window.request_redraw();
+                        state.update(delta.as_secs_f64());
                     }
                 }
+                _ => {}
             }
-            Event::DeviceEvent {
-                event: DeviceEvent::MouseMotion { delta },
-                ..
-            } => {
-                state.mouse_movement(delta);
-            }
-            _ => {}
         }
     })?;
     Ok(())
