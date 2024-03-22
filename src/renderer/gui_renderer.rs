@@ -46,14 +46,14 @@ impl GuiRenderer {
         let egui_output = self.egui_output.take();
         if let Some(egui_output) = egui_output {
             self.input_state
-                .handle_platform_output(&window, egui_output.platform_output);
+                .handle_platform_output(window, egui_output.platform_output);
             let tris = self
                 .input_state
                 .egui_ctx()
                 .tessellate(egui_output.shapes, egui_output.pixels_per_point);
 
             for (id, delta) in &egui_output.textures_delta.set {
-                self.renderer.update_texture(device, queue, *id, &delta);
+                self.renderer.update_texture(device, queue, *id, delta);
             }
             self.renderer
                 .update_buffers(device, queue, encoder, &tris, &screen_desc);

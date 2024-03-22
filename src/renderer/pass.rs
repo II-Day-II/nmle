@@ -85,7 +85,7 @@ impl DefaultPass {
                 write_mask: ColorWrites::ALL,
             }))
             .add_bind_group_layout(&default_bind_group_layout)
-            .build(&device);
+            .build(device);
 
         let default_bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("Default BindGroup"),

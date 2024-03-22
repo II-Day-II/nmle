@@ -73,8 +73,7 @@ impl Renderer {
             .formats
             .iter()
             .copied()
-            .filter(|s| s.is_srgb())
-            .next()
+            .find(|s| s.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
 
         let config = SurfaceConfiguration {

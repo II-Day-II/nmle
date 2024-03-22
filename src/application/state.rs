@@ -73,7 +73,7 @@ impl ApplicationState {
             .egui_ctx()
             .run(raw_input, |ctx| {
                 // TODO: how tf do I get state from ApplicationState visible in here??
-                egui::Window::new("egui window").show(&ctx, |ui| {
+                egui::Window::new("egui window").show(ctx, |ui| {
                     ui.heading("Hello World");
                     ui.drag_angle(&mut self.theta);
                 });

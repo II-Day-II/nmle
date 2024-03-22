@@ -36,12 +36,12 @@ impl Renderable {
         let num_indices = indices.len() as u32;
         let vtx_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("VertexBuffer"),
-            contents: bytemuck::cast_slice(&vertices),
+            contents: bytemuck::cast_slice(vertices),
             usage: BufferUsages::VERTEX,
         });
         let idx_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("IndexBuffer"),
-            contents: bytemuck::cast_slice(&indices),
+            contents: bytemuck::cast_slice(indices),
             usage: BufferUsages::INDEX,
         });
         Self {
@@ -51,7 +51,7 @@ impl Renderable {
             num_indices,
         }
     }
-    pub fn draw<'a, 'b>(&'a self, render_pass: &'b mut RenderPass<'a>) {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         render_pass.set_vertex_buffer(0, self.vtx_buffer.slice(..));
         render_pass.set_index_buffer(self.idx_buffer.slice(..), wgpu::IndexFormat::Uint16);
         render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
