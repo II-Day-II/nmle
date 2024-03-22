@@ -60,11 +60,30 @@ impl ApplicationState {
         self.renderer.render()
     }
 
-    fn update_gui(&mut self) {}
+    fn update_gui(&mut self) {
+        let raw_input = self
+            .renderer
+            .gui_renderer
+            .input_state
+            .take_egui_input(&self.renderer.window);
+        let egui_output = self
+            .renderer
+            .gui_renderer
+            .input_state
+            .egui_ctx()
+            .run(raw_input, |ctx| {
+                // TODO: how tf do I get state from ApplicationState visible in here??
+                egui::Window::new("egui window").show(&ctx, |ui| {
+                    ui.heading("Hello World");
+                    ui.drag_angle(&mut self.theta);
+                });
+            });
+        self.renderer.gui_renderer.prepare(egui_output);
+    }
 
     pub fn update(&mut self, dt_seconds: f64) {
         trace!("Update called with dt={}", dt_seconds);
-        self.theta += dt_seconds as f32 * std::f32::consts::PI;
+        // self.theta += dt_seconds as f32 * std::f32::consts::PI;
         let view_proj = self.camera.get_matrix(self.renderer.aspect());
         let rot = Mat4::rotation_z(self.theta);
         let mat = view_proj * rot;
@@ -74,7 +93,8 @@ impl ApplicationState {
     pub fn handle_event_input(&mut self, window: &Window, event: &Event<()>) -> bool {
         if let Event::WindowEvent { window_id, event } = event {
             if *window_id == window.id() {
-                self.renderer
+                let _ = self
+                    .renderer
                     .gui_renderer
                     .input_state
                     .on_window_event(window, event);
