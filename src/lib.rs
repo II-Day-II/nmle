@@ -1,5 +1,6 @@
 mod application;
 mod renderer;
+mod radiance_cascades;
 
 use log::{debug, error, info, trace, warn};
 use std::sync::Arc;
