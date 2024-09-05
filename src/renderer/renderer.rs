@@ -1,5 +1,6 @@
 use egui_wgpu::ScreenDescriptor;
 use log::{debug, warn};
+use vek::Vec2;
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
@@ -15,6 +16,8 @@ use super::{
     renderable::{Renderable, Vertex},
 };
 
+use crate::radiance_cascades::{cascades::RadianceCascades, jfa::JumpFlood};
+
 pub struct Renderer {
     _instance: Instance,
     pub window: Arc<Window>,
@@ -29,6 +32,9 @@ pub struct Renderer {
     renderables: HashMap<String, Renderable>,
     passes: HashMap<String, DefaultPass>,
     global_buffers: HashMap<String, Buffer>,
+
+    jfa: JumpFlood,
+    rc: RadianceCascades,
 }
 
 impl Renderer {
@@ -94,6 +100,10 @@ impl Renderer {
 
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
 
+        let screen_size = Vec2::new(size.width as f32, size.height as f32);
+        let jfa = JumpFlood::new(screen_size);
+        let rc = RadianceCascades::new(screen_size);
+
         debug!("Renderer initialized");
         Self {
             _instance: instance,
@@ -109,6 +119,9 @@ impl Renderer {
             renderables,
             passes,
             global_buffers: buffers,
+
+            jfa,
+            rc,
         }
     }
 
@@ -158,6 +171,9 @@ impl Renderer {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            let screen_size = Vec2::new(self.size.width as f32, self.size.height as f32);
+            self.jfa.resize(screen_size);
+            self.rc.resize(screen_size);
             debug!("Resized to {}x{}", new_size.width, new_size.height);
         }
     }
