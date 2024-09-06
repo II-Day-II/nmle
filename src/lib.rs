@@ -10,7 +10,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-const TITLE: &str = "nmle - New Matrix Learning Engine";
+const TITLE: &str = "nmle - the RC branch";
 
 pub async fn run() -> anyhow::Result<()> {
     // init logging

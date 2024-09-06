@@ -76,6 +76,7 @@ impl ApplicationState {
                 egui::Window::new("egui window").show(ctx, |ui| {
                     ui.heading("Hello World");
                     ui.drag_angle(&mut self.theta);
+                    ui.add(egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20).step_by(2.0));
                 });
             });
         self.renderer.gui_renderer.prepare(egui_output);
@@ -83,7 +84,7 @@ impl ApplicationState {
 
     pub fn update(&mut self, dt_seconds: f64) {
         trace!("Update called with dt={}", dt_seconds);
-        // self.theta += dt_seconds as f32 * std::f32::consts::PI;
+        self.theta += dt_seconds as f32 * std::f32::consts::PI * 0.01;
         let view_proj = self.camera.get_matrix(self.renderer.aspect());
         let rot = Mat4::rotation_z(self.theta);
         let mat = view_proj * rot;

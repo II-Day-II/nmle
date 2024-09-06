@@ -3,10 +3,7 @@ use log::{debug, warn};
 use vek::Vec2;
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance,
-    InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor,
-    RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor,
+    util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, ImageCopyTexture, Instance, InstanceDescriptor, Origin3d, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, Texture, TextureAspect, TextureDescriptor, TextureDimension, TextureUsages, TextureView, TextureViewDescriptor
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -27,14 +24,17 @@ pub struct Renderer {
     config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
 
+    render_texture: Texture,
+    render_view: TextureView,
+
     pub gui_renderer: GuiRenderer,
 
     renderables: HashMap<String, Renderable>,
     passes: HashMap<String, DefaultPass>,
     global_buffers: HashMap<String, Buffer>,
 
-    jfa: JumpFlood,
-    rc: RadianceCascades,
+    pub jfa: JumpFlood,
+    pub rc: RadianceCascades,
 }
 
 impl Renderer {
@@ -83,7 +83,7 @@ impl Renderer {
             .unwrap_or(surface_caps.formats[0]);
 
         let config = SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_DST,
             format: surface_format,
             width: size.width,
             height: size.height,
@@ -95,14 +95,17 @@ impl Renderer {
         surface.configure(&device, &config);
         debug!("Surface configured");
 
-        // let default_pass = DefaultPass::new(&device, &config);
-        // passes.insert("default".into(), default_pass);
+        let (render_texture, render_view) = create_render_texture(&device, &config);
+        debug!("Render texture created");
 
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
+        debug!("GUI renderer initialized");
 
         let screen_size = Vec2::new(size.width as f32, size.height as f32);
-        let jfa = JumpFlood::new(screen_size);
+        let jfa = JumpFlood::new(&device, screen_size);
+        debug!("JFA initialized");
         let rc = RadianceCascades::new(screen_size);
+        debug!("Radiance Cascades initialized");
 
         debug!("Renderer initialized");
         Self {
@@ -113,6 +116,9 @@ impl Renderer {
             surface,
             config,
             size,
+
+            render_texture,
+            render_view,
 
             gui_renderer,
 
@@ -171,15 +177,18 @@ impl Renderer {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            let (rt, rtv) = create_render_texture(&self.device, &self.config);
+            self.render_texture = rt;
+            self.render_view = rtv;
             let screen_size = Vec2::new(self.size.width as f32, self.size.height as f32);
-            self.jfa.resize(screen_size);
+            self.jfa.resize(&self.device, screen_size);
             self.rc.resize(screen_size);
             debug!("Resized to {}x{}", new_size.width, new_size.height);
         }
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output
+        let surface_view = output
             .texture
             .create_view(&TextureViewDescriptor::default());
         let mut encoder = self
@@ -190,10 +199,10 @@ impl Renderer {
             let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("Main renderpass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
+                    view: &self.render_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -216,6 +225,28 @@ impl Renderer {
                 }
             }
         }
+        self.jfa.run(&self.device, &mut encoder, &self.render_view, &self.render_texture, Vec2::new(self.size.width, self.size.height));
+        // copy rendertexture to screen texture
+        encoder.copy_texture_to_texture(
+            ImageCopyTexture {
+                texture: &self.render_texture,
+                mip_level: 0,
+                origin: Origin3d::ZERO,
+                aspect: TextureAspect::All,
+            }, 
+        ImageCopyTexture {
+                texture: &output.texture,
+                mip_level: 0,
+                origin: Origin3d::ZERO,
+                aspect: TextureAspect::All,
+            }, 
+        Extent3d {
+                width: self.size.width, 
+                height: self.size.height, 
+                depth_or_array_layers: 1
+            }
+        );
+
         // gui pass
         let screen_desc = ScreenDescriptor {
             size_in_pixels: [self.config.width, self.config.height],
@@ -225,7 +256,7 @@ impl Renderer {
             &self.device,
             &self.queue,
             &mut encoder,
-            &view,
+            &surface_view,
             &self.window,
             screen_desc,
         );
@@ -234,4 +265,19 @@ impl Renderer {
         output.present();
         Ok(())
     }
+}
+
+fn create_render_texture(device: &Device, config: &SurfaceConfiguration) -> (Texture, TextureView) {
+    let render_texture = device.create_texture(&TextureDescriptor { 
+        label: Some("RenderTexture"), 
+        size: Extent3d {width: config.width, height: config.height, depth_or_array_layers: 1},
+        mip_level_count: 1, 
+        sample_count: 1, 
+        dimension: TextureDimension::D2,
+        format: config.format, 
+        usage: TextureUsages::COPY_SRC | TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST, 
+        view_formats: &[config.format],
+    });
+    let render_view = render_texture.create_view(&TextureViewDescriptor::default());
+    (render_texture, render_view)
 }

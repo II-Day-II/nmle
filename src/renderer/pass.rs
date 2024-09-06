@@ -17,6 +17,8 @@ macro_rules! include_shader {
         include_spirv!(concat!(env!("OUT_DIR"), $file))
     };
 }
+pub(crate) use include_shader;
+
 pub struct DefaultPass {
     pipeline: Pipeline,
     bind_groups: Vec<BindGroup>,
