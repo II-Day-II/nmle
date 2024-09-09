@@ -1,9 +1,14 @@
 use egui_wgpu::ScreenDescriptor;
 use log::{debug, warn};
-use vek::Vec2;
 use std::{collections::HashMap, sync::Arc};
+use vek::Vec2;
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, ImageCopyTexture, Instance, InstanceDescriptor, Origin3d, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, Texture, TextureAspect, TextureDescriptor, TextureDimension, TextureUsages, TextureView, TextureViewDescriptor
+    util::{BufferInitDescriptor, DeviceExt},
+    Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d,
+    ImageCopyTexture, Instance, InstanceDescriptor, Origin3d, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, Texture,
+    TextureAspect, TextureDescriptor, TextureDimension, TextureUsages, TextureView,
+    TextureViewDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -225,7 +230,13 @@ impl Renderer {
                 }
             }
         }
-        self.jfa.run(&self.device, &mut encoder, &self.render_view, &self.render_texture, Vec2::new(self.size.width, self.size.height));
+        self.jfa.run(
+            &self.device,
+            &mut encoder,
+            &self.render_view,
+            &self.render_texture,
+            Vec2::new(self.size.width, self.size.height),
+        );
         // copy rendertexture to screen texture
         encoder.copy_texture_to_texture(
             ImageCopyTexture {
@@ -233,18 +244,18 @@ impl Renderer {
                 mip_level: 0,
                 origin: Origin3d::ZERO,
                 aspect: TextureAspect::All,
-            }, 
-        ImageCopyTexture {
+            },
+            ImageCopyTexture {
                 texture: &output.texture,
                 mip_level: 0,
                 origin: Origin3d::ZERO,
                 aspect: TextureAspect::All,
-            }, 
-        Extent3d {
-                width: self.size.width, 
-                height: self.size.height, 
-                depth_or_array_layers: 1
-            }
+            },
+            Extent3d {
+                width: self.size.width,
+                height: self.size.height,
+                depth_or_array_layers: 1,
+            },
         );
 
         // gui pass
@@ -268,14 +279,21 @@ impl Renderer {
 }
 
 fn create_render_texture(device: &Device, config: &SurfaceConfiguration) -> (Texture, TextureView) {
-    let render_texture = device.create_texture(&TextureDescriptor { 
-        label: Some("RenderTexture"), 
-        size: Extent3d {width: config.width, height: config.height, depth_or_array_layers: 1},
-        mip_level_count: 1, 
-        sample_count: 1, 
+    let render_texture = device.create_texture(&TextureDescriptor {
+        label: Some("RenderTexture"),
+        size: Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
         dimension: TextureDimension::D2,
-        format: config.format, 
-        usage: TextureUsages::COPY_SRC | TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST, 
+        format: config.format,
+        usage: TextureUsages::COPY_SRC
+            | TextureUsages::RENDER_ATTACHMENT
+            | TextureUsages::TEXTURE_BINDING
+            | TextureUsages::COPY_DST,
         view_formats: &[config.format],
     });
     let render_view = render_texture.create_view(&TextureViewDescriptor::default());

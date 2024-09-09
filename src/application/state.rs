@@ -76,7 +76,9 @@ impl ApplicationState {
                 egui::Window::new("egui window").show(ctx, |ui| {
                     ui.heading("Hello World");
                     ui.drag_angle(&mut self.theta);
-                    ui.add(egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20).step_by(2.0));
+                    ui.add(
+                        egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20).step_by(2.0),
+                    );
                 });
             });
         self.renderer.gui_renderer.prepare(egui_output);
