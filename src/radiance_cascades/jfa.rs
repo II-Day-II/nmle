@@ -1,7 +1,7 @@
 use std::mem::swap;
 
 use log::debug;
-use vek::{num_integer::Integer, Vec2};
+use vek::Vec2;
 use wgpu::{
     include_spirv,
     util::{BufferInitDescriptor, DeviceExt},
@@ -61,10 +61,7 @@ pub struct JumpFlood {
 
 impl JumpFlood {
     pub fn new(device: &Device, screen_size: Vec2<f32>) -> Self {
-        let mut num_passes = screen_size.reduce_partial_max().log2().ceil() as u32;
-        if num_passes.is_odd() {
-            num_passes += 1;
-        }
+        let num_passes = screen_size.reduce_partial_max().log2().ceil() as u32;
         let ping_pong_a = PingPongTex::new(
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
@@ -309,10 +306,7 @@ impl JumpFlood {
     }
     pub fn resize(&mut self, device: &Device, screen_size: Vec2<f32>) {
         self.num_passes = screen_size.reduce_partial_max().log2().ceil() as u32;
-        if !self.num_passes.is_even() {
-            // make sure it's even, or the jfa steps will cause epilepsy
-            self.num_passes += 1;
-        }
+
         self.ping_pong_a = PingPongTex::new(
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),

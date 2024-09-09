@@ -77,7 +77,7 @@ impl ApplicationState {
                     ui.heading("Hello World");
                     ui.drag_angle(&mut self.theta);
                     ui.add(
-                        egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20).step_by(2.0),
+                        egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20).text("jfa passes"), // TODO: replace with rc params
                     );
                 });
             });
