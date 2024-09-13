@@ -8,10 +8,10 @@ use wgpu::{
     BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferUsages, Color,
     ColorTargetState, ColorWrites, CommandEncoder, Device, Extent3d, FragmentState,
-    MultisampleState, Operations, PipelineLayoutDescriptor,
-    PrimitiveState, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, Sampler, SamplerDescriptor, ShaderStages, Texture, TextureDescriptor,
-    TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension, VertexState,
+    MultisampleState, Operations, PipelineLayoutDescriptor, PrimitiveState,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    Sampler, SamplerDescriptor, ShaderStages, Texture, TextureDescriptor, TextureUsages,
+    TextureView, TextureViewDescriptor, TextureViewDimension, VertexState,
 };
 
 use crate::renderer::include_shader;
@@ -455,6 +455,5 @@ impl JumpFlood {
             df_pass.set_bind_group(0, &df_bindgroup, &[]);
             df_pass.draw(0..3, 0..1);
         }
-
     }
 }

@@ -12,7 +12,7 @@ pub struct ApplicationState {
     input: Input,
 
     frame_time: f32,
-    
+
     pause: bool,
     theta: f32,
 }

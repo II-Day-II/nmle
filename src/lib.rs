@@ -53,13 +53,11 @@ pub async fn run() -> anyhow::Result<()> {
                 Event::WindowEvent {
                     event: WindowEvent::RedrawRequested,
                     window_id,
-                } if window_id == window.id() =>  {
-                    match state.draw() {
-                        Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost) => state.renderer.resize(state.renderer.size),
-                        Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
-                        Err(e) => error!("{}", e),
-                    }
+                } if window_id == window.id() => match state.draw() {
+                    Ok(_) => {}
+                    Err(wgpu::SurfaceError::Lost) => state.renderer.resize(state.renderer.size),
+                    Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
+                    Err(e) => error!("{}", e),
                 },
                 Event::WindowEvent {
                     event: WindowEvent::Resized(new_size),

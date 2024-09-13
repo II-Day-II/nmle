@@ -4,11 +4,10 @@ use std::{collections::HashMap, sync::Arc};
 use vek::Vec2;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d,
-    Instance, InstanceDescriptor, Queue, RenderPassColorAttachment,
-    RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, Texture,
-    TextureDescriptor, TextureDimension, TextureUsages, TextureView,
-    TextureViewDescriptor,
+    Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, Instance,
+    InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor,
+    RequestAdapterOptions, Surface, SurfaceConfiguration, Texture, TextureDescriptor,
+    TextureDimension, TextureUsages, TextureView, TextureViewDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -106,7 +105,8 @@ impl Renderer {
         let (render_texture, render_view) = create_render_texture(&device, &config, None);
         debug!("Render texture created");
 
-        let (distance_texture, distance_view) = create_render_texture(&device, &config, Some(wgpu::TextureFormat::Bgra8Unorm));
+        let (distance_texture, distance_view) =
+            create_render_texture(&device, &config, Some(wgpu::TextureFormat::Bgra8Unorm));
 
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
         debug!("GUI renderer initialized");
@@ -191,7 +191,11 @@ impl Renderer {
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
             let (rt, rtv) = create_render_texture(&self.device, &self.config, None);
-            let (dt, dtv) = create_render_texture(&self.device, &self.config, Some(wgpu::TextureFormat::Bgra8Unorm));
+            let (dt, dtv) = create_render_texture(
+                &self.device,
+                &self.config,
+                Some(wgpu::TextureFormat::Bgra8Unorm),
+            );
             self.render_texture = rt;
             self.render_view = rtv;
             self.distance_texture = dt;
@@ -275,7 +279,11 @@ impl Renderer {
     }
 }
 
-fn create_render_texture(device: &Device, config: &SurfaceConfiguration, format_override: Option<wgpu::TextureFormat>) -> (Texture, TextureView) {
+fn create_render_texture(
+    device: &Device,
+    config: &SurfaceConfiguration,
+    format_override: Option<wgpu::TextureFormat>,
+) -> (Texture, TextureView) {
     let render_texture = device.create_texture(&TextureDescriptor {
         label: Some("RenderTexture"),
         size: Extent3d {
@@ -286,7 +294,11 @@ fn create_render_texture(device: &Device, config: &SurfaceConfiguration, format_
         mip_level_count: 1,
         sample_count: 1,
         dimension: TextureDimension::D2,
-        format: if let Some(format) = format_override {format} else {config.format},
+        format: if let Some(format) = format_override {
+            format
+        } else {
+            config.format
+        },
         usage: TextureUsages::COPY_SRC
             | TextureUsages::RENDER_ATTACHMENT
             | TextureUsages::TEXTURE_BINDING

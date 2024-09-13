@@ -25,7 +25,7 @@ float rand(vec2 co) { // random function from jason's implementation
 vec4 raymarch() {
     vec4 light = texture(sampler2D(sceneTexture, texSampler), uv);
     
-    const int rayCount = 32; // this is all temp anyway
+    const int rayCount = 16; // this is all temp anyway
     const int maxSteps = 64;
 
     const float oneOverRayCount = 1.0 / float(rayCount);
