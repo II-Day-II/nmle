@@ -11,6 +11,9 @@ pub struct ApplicationState {
     pub renderer: Renderer,
     input: Input,
 
+    frame_time: f32,
+    
+    pause: bool,
     theta: f32,
 }
 
@@ -52,6 +55,8 @@ impl ApplicationState {
             renderer,
             camera,
             theta: 0.0,
+            pause: false,
+            frame_time: 0.0,
         }
     }
     pub fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -76,9 +81,12 @@ impl ApplicationState {
                 egui::Window::new("egui window").show(ctx, |ui| {
                     ui.heading("Hello World");
                     ui.drag_angle(&mut self.theta);
+                    ui.checkbox(&mut self.pause, "pause?");
                     ui.add(
-                        egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20).text("jfa passes"), // TODO: replace with rc params
+                        egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20)
+                            .text("jfa passes"), // TODO: replace with rc params
                     );
+                    ui.label(format!("{}", self.frame_time));
                 });
             });
         self.renderer.gui_renderer.prepare(egui_output);
@@ -86,7 +94,10 @@ impl ApplicationState {
 
     pub fn update(&mut self, dt_seconds: f64) {
         trace!("Update called with dt={}", dt_seconds);
-        self.theta += dt_seconds as f32 * std::f32::consts::PI * 0.01;
+        self.frame_time = dt_seconds as f32;
+        if !self.pause {
+            self.theta += dt_seconds as f32 * std::f32::consts::PI * 0.01;
+        }
         let view_proj = self.camera.get_matrix(self.renderer.aspect());
         let rot = Mat4::rotation_z(self.theta);
         let mat = view_proj * rot;

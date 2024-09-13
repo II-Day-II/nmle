@@ -5,9 +5,9 @@ use vek::Vec2;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d,
-    ImageCopyTexture, Instance, InstanceDescriptor, Origin3d, Queue, RenderPassColorAttachment,
+    Instance, InstanceDescriptor, Queue, RenderPassColorAttachment,
     RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, Texture,
-    TextureAspect, TextureDescriptor, TextureDimension, TextureUsages, TextureView,
+    TextureDescriptor, TextureDimension, TextureUsages, TextureView,
     TextureViewDescriptor,
 };
 use winit::{dpi::PhysicalSize, window::Window};
@@ -31,6 +31,9 @@ pub struct Renderer {
 
     render_texture: Texture,
     render_view: TextureView,
+
+    distance_texture: Texture,
+    distance_view: TextureView,
 
     pub gui_renderer: GuiRenderer,
 
@@ -100,8 +103,10 @@ impl Renderer {
         surface.configure(&device, &config);
         debug!("Surface configured");
 
-        let (render_texture, render_view) = create_render_texture(&device, &config);
+        let (render_texture, render_view) = create_render_texture(&device, &config, None);
         debug!("Render texture created");
+
+        let (distance_texture, distance_view) = create_render_texture(&device, &config, Some(wgpu::TextureFormat::Bgra8Unorm));
 
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
         debug!("GUI renderer initialized");
@@ -109,7 +114,7 @@ impl Renderer {
         let screen_size = Vec2::new(size.width as f32, size.height as f32);
         let jfa = JumpFlood::new(&device, screen_size);
         debug!("JFA initialized");
-        let rc = RadianceCascades::new(screen_size);
+        let rc = RadianceCascades::new(&device, screen_size);
         debug!("Radiance Cascades initialized");
 
         debug!("Renderer initialized");
@@ -124,6 +129,9 @@ impl Renderer {
 
             render_texture,
             render_view,
+
+            distance_texture,
+            distance_view,
 
             gui_renderer,
 
@@ -182,9 +190,12 @@ impl Renderer {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            let (rt, rtv) = create_render_texture(&self.device, &self.config);
+            let (rt, rtv) = create_render_texture(&self.device, &self.config, None);
+            let (dt, dtv) = create_render_texture(&self.device, &self.config, Some(wgpu::TextureFormat::Bgra8Unorm));
             self.render_texture = rt;
             self.render_view = rtv;
+            self.distance_texture = dt;
+            self.distance_view = dtv;
             let screen_size = Vec2::new(self.size.width as f32, self.size.height as f32);
             self.jfa.resize(&self.device, screen_size);
             self.rc.resize(screen_size);
@@ -234,28 +245,14 @@ impl Renderer {
             &self.device,
             &mut encoder,
             &self.render_view,
-            &self.render_texture,
-            Vec2::new(self.size.width, self.size.height),
+            &self.distance_view,
         );
-        // copy rendertexture to screen texture
-        encoder.copy_texture_to_texture(
-            ImageCopyTexture {
-                texture: &self.render_texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: TextureAspect::All,
-            },
-            ImageCopyTexture {
-                texture: &output.texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: TextureAspect::All,
-            },
-            Extent3d {
-                width: self.size.width,
-                height: self.size.height,
-                depth_or_array_layers: 1,
-            },
+        self.rc.run(
+            &self.device,
+            &mut encoder,
+            &self.render_view,
+            &self.distance_view,
+            &surface_view,
         );
 
         // gui pass
@@ -278,7 +275,7 @@ impl Renderer {
     }
 }
 
-fn create_render_texture(device: &Device, config: &SurfaceConfiguration) -> (Texture, TextureView) {
+fn create_render_texture(device: &Device, config: &SurfaceConfiguration, format_override: Option<wgpu::TextureFormat>) -> (Texture, TextureView) {
     let render_texture = device.create_texture(&TextureDescriptor {
         label: Some("RenderTexture"),
         size: Extent3d {
@@ -289,7 +286,7 @@ fn create_render_texture(device: &Device, config: &SurfaceConfiguration) -> (Tex
         mip_level_count: 1,
         sample_count: 1,
         dimension: TextureDimension::D2,
-        format: config.format,
+        format: if let Some(format) = format_override {format} else {config.format},
         usage: TextureUsages::COPY_SRC
             | TextureUsages::RENDER_ATTACHMENT
             | TextureUsages::TEXTURE_BINDING

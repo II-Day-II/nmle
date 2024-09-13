@@ -8,7 +8,7 @@ use wgpu::{
     BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferUsages, Color,
     ColorTargetState, ColorWrites, CommandEncoder, Device, Extent3d, FragmentState,
-    ImageCopyTexture, MultisampleState, Operations, Origin3d, PipelineLayoutDescriptor,
+    MultisampleState, Operations, PipelineLayoutDescriptor,
     PrimitiveState, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
     RenderPipelineDescriptor, Sampler, SamplerDescriptor, ShaderStages, Texture, TextureDescriptor,
     TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension, VertexState,
@@ -269,7 +269,8 @@ impl JumpFlood {
                 module: &df_module,
                 entry_point: "main",
                 targets: &[Some(ColorTargetState {
-                    format: ping_pong_b.texture.format(),
+                    // format: ping_pong_b.texture.format(),
+                    format: wgpu::TextureFormat::Bgra8Unorm,
                     blend: None,
                     write_mask: ColorWrites::ALL,
                 })],
@@ -319,13 +320,14 @@ impl JumpFlood {
         );
     }
 
+    // run jfa to create a distance field to the non transparent pixels in input texture,
+    // stored in output texture
     pub fn run(
         &mut self,
         device: &Device,
         encoder: &mut CommandEncoder,
         input_texture_view: &TextureView,
-        output_texture: &Texture,
-        size: Vec2<u32>,
+        output_texture_view: &TextureView,
     ) {
         let mut current_output_texture = &mut self.ping_pong_a;
         let mut current_input_texture = &mut self.ping_pong_b;
@@ -438,7 +440,7 @@ impl JumpFlood {
             let mut df_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("Distance field pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &current_output_texture.view,
+                    view: &output_texture_view,
                     resolve_target: None,
                     ops: Operations {
                         load: wgpu::LoadOp::Clear(Color::TRANSPARENT),
@@ -454,27 +456,5 @@ impl JumpFlood {
             df_pass.draw(0..3, 0..1);
         }
 
-        // copy it all to the out texture
-        /**/
-        encoder.copy_texture_to_texture(
-            ImageCopyTexture {
-                texture: &current_output_texture.texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            ImageCopyTexture {
-                texture: output_texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            Extent3d {
-                width: size.x,
-                height: size.y,
-                depth_or_array_layers: 1,
-            },
-        );
-        /**/
     }
 }
