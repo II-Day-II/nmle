@@ -79,14 +79,17 @@ impl ApplicationState {
             .run(raw_input, |ctx| {
                 // TODO: how tf do I get state from ApplicationState visible in here??
                 egui::Window::new("egui window").show(ctx, |ui| {
-                    ui.heading("Hello World");
+                    ui.heading("Parameters");
                     ui.drag_angle(&mut self.theta);
                     ui.checkbox(&mut self.pause, "pause?");
                     ui.add(
                         egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20)
                             .text("jfa passes"), // TODO: replace with rc params
                     );
-                    ui.label(format!("{}", self.frame_time));
+                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.base_ray_count, 4..=16).text("base ray count"));
+                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.interval_size, 0.0..=0.5).text("interval size"));
+                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.angle_offset, 0.0..=1.0).text("angle offset"));
+                    ui.label(format!("{:0>7.4}ms", self.frame_time*1000.0));
                 });
             });
         self.renderer.gui_renderer.prepare(egui_output);

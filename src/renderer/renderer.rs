@@ -284,6 +284,7 @@ fn create_render_texture(
     config: &SurfaceConfiguration,
     format_override: Option<wgpu::TextureFormat>,
 ) -> (Texture, TextureView) {
+    let alt_format = if config.format.is_srgb() {config.format.remove_srgb_suffix()} else {config.format.add_srgb_suffix()};
     let render_texture = device.create_texture(&TextureDescriptor {
         label: Some("RenderTexture"),
         size: Extent3d {
@@ -303,7 +304,7 @@ fn create_render_texture(
             | TextureUsages::RENDER_ATTACHMENT
             | TextureUsages::TEXTURE_BINDING
             | TextureUsages::COPY_DST,
-        view_formats: &[config.format],
+        view_formats: &[config.format, alt_format],
     });
     let render_view = render_texture.create_view(&TextureViewDescriptor::default());
     (render_texture, render_view)

@@ -7,41 +7,17 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferUsages, Color,
-    ColorTargetState, ColorWrites, CommandEncoder, Device, Extent3d, FragmentState,
+    ColorTargetState, ColorWrites, CommandEncoder, Device, FragmentState,
     MultisampleState, Operations, PipelineLayoutDescriptor, PrimitiveState,
     RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    Sampler, SamplerDescriptor, ShaderStages, Texture, TextureDescriptor, TextureUsages,
-    TextureView, TextureViewDescriptor, TextureViewDimension, VertexState,
+    Sampler, SamplerDescriptor, ShaderStages, 
+    TextureView, TextureViewDimension, VertexState,
 };
 
 use crate::renderer::include_shader;
+use super::pingpong::PingPongTex;
 
-struct PingPongTex {
-    texture: Texture,
-    view: TextureView,
-}
-impl PingPongTex {
-    pub fn new(device: &Device, size: Vec2<u32>, label: &str) -> Self {
-        let texture = device.create_texture(&TextureDescriptor {
-            label: Some(label),
-            size: Extent3d {
-                width: size.x,
-                height: size.y,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            usage: TextureUsages::RENDER_ATTACHMENT
-                | TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_SRC,
-            view_formats: &[wgpu::TextureFormat::Bgra8Unorm],
-        });
-        let view = texture.create_view(&TextureViewDescriptor::default());
-        Self { texture, view }
-    }
-}
+
 pub struct JumpFlood {
     pub num_passes: u32,
     ping_pong_a: PingPongTex,
@@ -66,11 +42,13 @@ impl JumpFlood {
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PingA",
+            None,
         );
         let ping_pong_b = PingPongTex::new(
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PongB",
+            None
         );
         debug!("pingpong setup done");
         let fullscreen_tri_module =
@@ -312,11 +290,13 @@ impl JumpFlood {
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PingA",
+            None,
         );
         self.ping_pong_b = PingPongTex::new(
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PongB",
+            None,
         );
     }
 
