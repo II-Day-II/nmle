@@ -40,11 +40,13 @@ vec4 raymarch() {
             vec2 sampleUV = uv;
             vec4 radDelta = vec4(0.0);
             bool hitSurface = false;
-            for (int stp = 1; stp < maxSteps; ++stp) {
+            for (int stp = 0; stp < maxSteps; ++stp) {
                 // how far is nearest object?
                 float dist = texture(sampler2D(distanceTexture, texSampler), sampleUV).r;
                 sampleUV += rayDiriection * dist; // go that far in our direction
-                if (sampleUV.x > 1.0 || sampleUV.x < 0.0 || sampleUV.y > 1.0 || sampleUV.y < 0.0) break;
+                if (sampleUV.x > 1.0 || sampleUV.x < 0.0 || sampleUV.y > 1.0 || sampleUV.y < 0.0) {
+                    break;
+                }
                 if (dist < EPSILON) {
                     vec4 sampleColor = texture(sampler2D(sceneTexture, texSampler), sampleUV);
                     radDelta += sampleColor;
