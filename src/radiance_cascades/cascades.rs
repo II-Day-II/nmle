@@ -242,6 +242,7 @@ impl RadianceCascades {
             address_mode_w: wgpu::AddressMode::Repeat,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
 
@@ -255,11 +256,11 @@ impl RadianceCascades {
             cascade_textures,
             sampler,
         };
-        rc.resize(screen_size);
+        rc.resize(&device, screen_size);
         rc
     }
 
-    pub fn resize(&mut self, screen_size: Vec2<f32>) {
+    pub fn resize(&mut self, device: &Device, screen_size: Vec2<f32>) {
         let branching_factor = 2.0f32;
         let interval0 = 4.0; // TODO: what should this be?
         let diagonal = screen_size.distance(Vec2::new(0.0, 0.0)); // no length()?
@@ -268,6 +269,8 @@ impl RadianceCascades {
         let cascade_count = start_interval.log(branching_factor).ceil() as u32;
         self.params.cascade_count = cascade_count;
         //self.params.start_interval = start_interval; // TODO: figure this shit out 
+        self.cascade_textures[0] = PingPongTex::new(&device, Vec2::new(screen_size.x as u32, screen_size.y as u32), "cascade tex 0", Some(TextureFormat::Bgra8UnormSrgb));
+        self.cascade_textures[1] = PingPongTex::new(&device, Vec2::new(screen_size.x as u32, screen_size.y as u32), "cascade tex 1", Some(TextureFormat::Bgra8UnormSrgb));
     }
 
     pub fn run(

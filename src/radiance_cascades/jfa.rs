@@ -32,7 +32,7 @@ pub struct JumpFlood {
     distance_field_pipeline: RenderPipeline,
     distance_field_bg_layout: BindGroupLayout,
 
-    sampler: Sampler,
+    jfa_sampler: Sampler,
 }
 
 impl JumpFlood {
@@ -262,7 +262,8 @@ impl JumpFlood {
             address_mode_v: wgpu::AddressMode::Repeat,
             address_mode_w: wgpu::AddressMode::Repeat,
             mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
 
@@ -280,7 +281,7 @@ impl JumpFlood {
             distance_field_bg_layout,
             distance_field_pipeline,
 
-            sampler,
+            jfa_sampler: sampler,
         }
     }
     pub fn resize(&mut self, device: &Device, screen_size: Vec2<f32>) {
@@ -323,7 +324,7 @@ impl JumpFlood {
                     },
                     BindGroupEntry {
                         binding: 1,
-                        resource: BindingResource::Sampler(&self.sampler),
+                        resource: BindingResource::Sampler(&self.jfa_sampler),
                     },
                 ],
             });
@@ -377,7 +378,7 @@ impl JumpFlood {
                     },
                     BindGroupEntry {
                         binding: 2,
-                        resource: BindingResource::Sampler(&self.sampler),
+                        resource: BindingResource::Sampler(&self.jfa_sampler),
                     },
                 ],
             });
@@ -413,7 +414,7 @@ impl JumpFlood {
                     },
                     BindGroupEntry {
                         binding: 1,
-                        resource: BindingResource::Sampler(&self.sampler),
+                        resource: BindingResource::Sampler(&self.jfa_sampler),
                     },
                 ],
             });

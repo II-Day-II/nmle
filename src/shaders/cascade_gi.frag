@@ -35,7 +35,7 @@ vec4 raymarch() {
     float interval_start = is_last_layer ? 0.0 : Uniforms.interval_size;
     float interval_end = is_last_layer ? Uniforms.interval_size : sqrt(2.0);
 
-    vec2 scale = min(resolution.x, resolution.y) / resolution;
+    vec2 aspect = min(resolution.x, resolution.y) / resolution;
     vec2 one_over_size = 1.0 / resolution;
     float min_step_size = min(one_over_size.x, one_over_size.y) * 0.5; // why 0.5?
 
@@ -49,27 +49,26 @@ vec4 raymarch() {
         vec2 rayDiriection = vec2(cos(angle), -sin(angle));
 
         // start in our decided starting location
-        vec2 sampleUV = effectiveUV + rayDiriection * interval_start * scale;
+        vec2 sampleUV = effectiveUV + rayDiriection * interval_start * aspect;
         // track how far we've gone
         float traveled = interval_start;
 
         vec4 radDelta = vec4(0.0);
         bool hitSurface = false;
-        for (int stp = 0; stp < maxSteps; ++stp) {
+        for (int stp = 1; stp < maxSteps; ++stp) {
             // how far is nearest object?
             float dist = texture(sampler2D(distanceTexture, texSampler), sampleUV).r;
             // go that far in our direction
-            sampleUV += rayDiriection * dist * scale; 
+            sampleUV += rayDiriection * dist * aspect; 
             if (sampleUV.x > 1.0 || sampleUV.x < 0.0 || sampleUV.y > 1.0 || sampleUV.y < 0.0) {
                 break;
             }
             if (dist < min_step_size) {
                 vec4 sampleColor = texture(sampler2D(sceneTexture, texSampler), sampleUV);
                 if (sampleColor.a == 0.0) { // apparently this happens a lot...
-                    radiance = vec4(1.0, 0.0, 0.0, 1.0);
-                    sampleUV += min_step_size;
+                    // radiance = vec4(1.0, 0.0, 0.0, 1.0);
+                    sampleUV += 1.0 * min_step_size * rayDiriection; // taking an extra step works sometimes...
                     continue;
-                    break;
                 }
                 radDelta += sampleColor;
                 hitSurface = true;

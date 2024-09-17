@@ -202,7 +202,7 @@ impl Renderer {
             self.distance_view = dtv;
             let screen_size = Vec2::new(self.size.width as f32, self.size.height as f32);
             self.jfa.resize(&self.device, screen_size);
-            self.rc.resize(screen_size);
+            self.rc.resize(&self.device, screen_size);
             debug!("Resized to {}x{}", new_size.width, new_size.height);
         }
     }

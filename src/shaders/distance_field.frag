@@ -11,5 +11,5 @@ void main() {
     vec2 nearestSeed = texture(sampler2D(jfaTexture, jfaSampler), uv).xy;
     float dist = clamp(distance(uv, nearestSeed), 0.0, 1.0);
 
-    outFragColor = vec4(vec3(dist), 1.0);
+    outFragColor = vec4(vec3(dist, nearestSeed), 1.0);
 }
