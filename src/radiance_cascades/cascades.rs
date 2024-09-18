@@ -142,7 +142,7 @@ impl RadianceCascades {
         let cascades_bg0_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("cascades bg0 layout"),
             entries: &[
-                BindGroupLayoutEntry {
+                BindGroupLayoutEntry { // scene texture
                     binding: 0,
                     visibility: ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
@@ -152,17 +152,17 @@ impl RadianceCascades {
                     },
                     count: None,
                 },
-                BindGroupLayoutEntry {
+                BindGroupLayoutEntry { // distance texture
                     binding: 1,
                     visibility: ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
                         view_dimension: wgpu::TextureViewDimension::D2,
                         multisampled: false,
                     },
                     count: None,
                 },
-                BindGroupLayoutEntry {
+                BindGroupLayoutEntry { // last cascade texture
                     binding: 2,
                     visibility: ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
@@ -172,10 +172,10 @@ impl RadianceCascades {
                     },
                     count: None,
                 },
-                BindGroupLayoutEntry {
+                BindGroupLayoutEntry { // sampler
                     binding: 3,
                     visibility: ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
                     count: None,
                 },
             ],
@@ -240,9 +240,9 @@ impl RadianceCascades {
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
             address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
 
@@ -266,9 +266,9 @@ impl RadianceCascades {
         let diagonal = screen_size.distance(Vec2::new(0.0, 0.0)); // no length()?
         let factor = (diagonal / interval0).log(branching_factor).ceil();
         let start_interval = (interval0 * branching_factor.powf(factor)) / (branching_factor - 1.0);
-        let cascade_count = start_interval.log(branching_factor).ceil() as u32;
-        self.params.cascade_count = cascade_count;
+        let _cascade_count = start_interval.log(branching_factor).ceil() as u32;
         //self.params.start_interval = start_interval; // TODO: figure this shit out 
+        // self.params.cascade_count = cascade_count;
         self.cascade_textures[0] = PingPongTex::new(&device, Vec2::new(screen_size.x as u32, screen_size.y as u32), "cascade tex 0", Some(TextureFormat::Bgra8UnormSrgb));
         self.cascade_textures[1] = PingPongTex::new(&device, Vec2::new(screen_size.x as u32, screen_size.y as u32), "cascade tex 1", Some(TextureFormat::Bgra8UnormSrgb));
     }
@@ -282,7 +282,7 @@ impl RadianceCascades {
         output_tex_view: &TextureView,
     ) {
         let mut curr_cascade_idx = 0;
-        for i in (1..=2).rev() {
+        for i in (1..=self.params.cascade_count).rev() {
             self.params.ray_count = if i < 1 {self.params.base_ray_count} else {self.params.base_ray_count.pow(i)};
             let cascades_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: Some("cascades bg1 unform buffer"),

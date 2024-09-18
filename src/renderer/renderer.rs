@@ -106,7 +106,7 @@ impl Renderer {
         debug!("Render texture created");
 
         let (distance_texture, distance_view) =
-            create_render_texture(&device, &config, Some(wgpu::TextureFormat::Bgra8Unorm));
+            create_render_texture(&device, &config, Some(wgpu::TextureFormat::R8Unorm));
 
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
         debug!("GUI renderer initialized");
@@ -194,7 +194,7 @@ impl Renderer {
             let (dt, dtv) = create_render_texture(
                 &self.device,
                 &self.config,
-                Some(wgpu::TextureFormat::Bgra8Unorm),
+                Some(wgpu::TextureFormat::R8Unorm),
             );
             self.render_texture = rt;
             self.render_view = rtv;
@@ -284,7 +284,12 @@ fn create_render_texture(
     config: &SurfaceConfiguration,
     format_override: Option<wgpu::TextureFormat>,
 ) -> (Texture, TextureView) {
-    let alt_format = if config.format.is_srgb() {config.format.remove_srgb_suffix()} else {config.format.add_srgb_suffix()};
+    let config_formats = [config.format.remove_srgb_suffix(), config.format.add_srgb_suffix()];
+    let final_formats = if let Some(fmt) = format_override {
+        [fmt.add_srgb_suffix(), fmt.remove_srgb_suffix()]
+    } else {
+        config_formats
+    };
     let render_texture = device.create_texture(&TextureDescriptor {
         label: Some("RenderTexture"),
         size: Extent3d {
@@ -304,7 +309,7 @@ fn create_render_texture(
             | TextureUsages::RENDER_ATTACHMENT
             | TextureUsages::TEXTURE_BINDING
             | TextureUsages::COPY_DST,
-        view_formats: &[config.format, alt_format],
+        view_formats: &final_formats,
     });
     let render_view = render_texture.create_view(&TextureViewDescriptor::default());
     (render_texture, render_view)

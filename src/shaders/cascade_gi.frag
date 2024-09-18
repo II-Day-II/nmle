@@ -27,7 +27,7 @@ float rand(vec2 co) { // random function from jason's implementation
 }
 
 vec4 raymarch() {
-    vec2 resolution = textureSize(sampler2D(distanceTexture, texSampler), 0);
+    vec2 resolution = textureSize(sampler2D(sceneTexture, texSampler), 0);
     vec2 coord = floor(uv * resolution); // floor?
 
     bool is_last_layer = Uniforms.ray_count == Uniforms.base_ray_count;
@@ -60,14 +60,16 @@ vec4 raymarch() {
             float dist = texture(sampler2D(distanceTexture, texSampler), sampleUV).r;
             // go that far in our direction
             sampleUV += rayDiriection * dist * aspect; 
+            // check if oob
             if (sampleUV.x > 1.0 || sampleUV.x < 0.0 || sampleUV.y > 1.0 || sampleUV.y < 0.0) {
                 break;
             }
+            // if we're close enough to the shape
             if (dist < min_step_size) {
                 vec4 sampleColor = texture(sampler2D(sceneTexture, texSampler), sampleUV);
-                if (sampleColor.a == 0.0) { // apparently this happens a lot...
-                    // radiance = vec4(1.0, 0.0, 0.0, 1.0);
-                    sampleUV += 1.0 * min_step_size * rayDiriection; // taking an extra step works sometimes...
+                if (sampleColor.a == 0.0) { // apparently this happens a lot... we miss the original shape
+                    radiance = vec4(1.0, 0.0, 0.0, 1.0);
+                    // sampleUV += 1.0 * min_step_size * rayDiriection; // taking an extra step works sometimes...
                     continue;
                 }
                 radDelta += sampleColor;

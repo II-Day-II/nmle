@@ -89,6 +89,7 @@ impl ApplicationState {
                     ui.add(egui::Slider::new(&mut self.renderer.rc.params.base_ray_count, 4..=16).text("base ray count"));
                     ui.add(egui::Slider::new(&mut self.renderer.rc.params.interval_size, 0.0..=0.5).text("interval size"));
                     ui.add(egui::Slider::new(&mut self.renderer.rc.params.angle_offset, 0.0..=1.0).text("angle offset"));
+                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.cascade_count, 1..=2).text("cascade count"));
                     ui.label(format!("{:0>7.4}ms", self.frame_time*1000.0));
                 });
             });

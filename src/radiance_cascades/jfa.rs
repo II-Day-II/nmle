@@ -247,8 +247,7 @@ impl JumpFlood {
                 module: &df_module,
                 entry_point: "main",
                 targets: &[Some(ColorTargetState {
-                    // format: ping_pong_b.texture.format(),
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format: wgpu::TextureFormat::R8Unorm,
                     blend: None,
                     write_mask: ColorWrites::ALL,
                 })],
