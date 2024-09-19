@@ -18,7 +18,7 @@ void main() {
     for (float y = -1.0; y <= 1.0; y += 1.0) {
         for (float x = -1.0; x <= 1.0; x += 1.0) {
             vec2 sampleUV = uv + vec2(x, y) * offset * oneOverSize;
-            if (sampleUV.x < 0.0 ||sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
+            if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
                 continue;
             }
             vec4 sampleValue = texture(sampler2D(inputTexture, inputSampler), sampleUV);

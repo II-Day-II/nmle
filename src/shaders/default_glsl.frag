@@ -8,7 +8,7 @@ layout (location = 0) out vec4 out_FragColor;
 void main()
 {
     vec2 uv = in_uv.xy * 2.0 - 1.0;
-    if (dot(uv, uv) < 0.0065 || abs(uv.x) - abs(uv.y) > 0.9) {
+    if (dot(uv, uv) < 0.0065 ) { //|| abs(uv.x) - abs(uv.y) > 0.9) {
         out_FragColor = vec4(inColor, 1);
     }
     else {
