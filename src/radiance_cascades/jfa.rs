@@ -42,13 +42,13 @@ impl JumpFlood {
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PingA",
-            None,
+            Some(wgpu::TextureFormat::Rg16Float),
         );
         let ping_pong_b = PingPongTex::new(
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PongB",
-            None
+            Some(wgpu::TextureFormat::Rg16Float),
         );
         debug!("pingpong setup done");
         let fullscreen_tri_module =
@@ -247,7 +247,7 @@ impl JumpFlood {
                 module: &df_module,
                 entry_point: "main",
                 targets: &[Some(ColorTargetState {
-                    format: wgpu::TextureFormat::R8Unorm,
+                    format: wgpu::TextureFormat::R16Float,
                     blend: None,
                     write_mask: ColorWrites::ALL,
                 })],
@@ -290,13 +290,13 @@ impl JumpFlood {
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PingA",
-            None,
+            Some(wgpu::TextureFormat::Rg16Float),
         );
         self.ping_pong_b = PingPongTex::new(
             &device,
             Vec2::new(screen_size.x as u32, screen_size.y as u32),
             "PongB",
-            None,
+            Some(wgpu::TextureFormat::Rg16Float),
         );
     }
 

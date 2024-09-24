@@ -2,7 +2,8 @@
 
 layout(location = 0) in vec2 uv;
 
-layout(location = 0) out vec4 outFragColor;
+// layout(location = 0) out vec4 outFragColor;
+layout(location = 0) out vec2 outFragColor;
 
 layout(set = 0, binding = 0) uniform Uniforms {
     float offset;
@@ -34,7 +35,7 @@ void main() {
         }
     }
     // jfa output
-    outFragColor = nearestSeed;
+    outFragColor.xy = nearestSeed.xy;
     // this was a mistake, but the output looks pretty cool sometimes
     // outFragColor = vec4(vec3(clamp(distance(uv, nearestSeed.xy), 0.0, 1.0)), 1.0);
 }

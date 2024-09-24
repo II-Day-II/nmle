@@ -67,11 +67,11 @@ vec4 raymarch() {
             // if we're close enough to the shape
             if (dist < min_step_size) {
                 vec4 sampleColor = texture(sampler2D(sceneTexture, texSampler), sampleUV);
-                if (sampleColor.a == 0.0) { // apparently this happens a lot... we miss the original shape
-                    radiance = vec4(1.0, 0.0, 0.0, 1.0);
+                // if (sampleColor.a == 0.0) { // apparently this happens a lot... we miss the original shape
+                    // radiance = vec4(1.0, 0.0, 0.0, 1.0);
                     // sampleUV += 1.0 * min_step_size * rayDiriection; // taking an extra step works sometimes...
-                    continue;
-                }
+                    // continue;
+                // }
                 radDelta += sampleColor;
                 hitSurface = true;
                 break;

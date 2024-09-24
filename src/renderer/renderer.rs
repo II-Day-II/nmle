@@ -106,7 +106,7 @@ impl Renderer {
         debug!("Render texture created");
 
         let (distance_texture, distance_view) =
-            create_render_texture(&device, &config, Some(wgpu::TextureFormat::R8Unorm));
+            create_render_texture(&device, &config, Some(wgpu::TextureFormat::R16Float));
 
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
         debug!("GUI renderer initialized");
@@ -194,7 +194,7 @@ impl Renderer {
             let (dt, dtv) = create_render_texture(
                 &self.device,
                 &self.config,
-                Some(wgpu::TextureFormat::R8Unorm),
+                Some(wgpu::TextureFormat::R16Float),
             );
             self.render_texture = rt;
             self.render_view = rtv;
