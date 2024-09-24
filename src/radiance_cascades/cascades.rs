@@ -26,22 +26,18 @@ pub struct RadianceCascades {
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CascadeParams {
-    pub start_interval: f32,
-    pub interval_split: f32,
     pub angle_offset: f32,
     pub cascade_count: u32, 
+    pub cascade_index: u32,
     pub base_ray_count: u32,
-    pub ray_count: u32, // set automatically in cascade.run
 }
 impl CascadeParams {
     pub fn new() -> Self {
         Self {
-            start_interval: 0.0,
-            interval_split: 0.125,
             angle_offset: 0.5,
             cascade_count: 2,
+            cascade_index: 0,
             base_ray_count: 4,
-            ray_count: 0
         }
     }
 }
@@ -203,14 +199,9 @@ impl RadianceCascades {
     }
 
     pub fn resize(&mut self, device: &Device, screen_size: Vec2<f32>) {
-        let branching_factor = 2.0f32;
-        let interval0 = 4.0; // TODO: what should this be?
-        let diagonal = screen_size.distance(Vec2::new(0.0, 0.0)); // no length()?
-        let factor = (diagonal / interval0).log(branching_factor).ceil();
-        let start_interval = (interval0 * branching_factor.powf(factor)) / (branching_factor - 1.0);
-        let _cascade_count = start_interval.log(branching_factor).ceil() as u32;
-        //self.params.start_interval = start_interval; // TODO: figure this shit out 
-        // self.params.cascade_count = cascade_count;
+        let diagonal = screen_size.magnitude();
+        let cascade_count = diagonal.log(self.params.base_ray_count as f32).ceil() + 1.0;
+        self.params.cascade_count = cascade_count as u32;
         self.cascade_textures[0] = PingPongTex::new(&device, Vec2::new(screen_size.x as u32, screen_size.y as u32), "cascade tex 0", Some(TextureFormat::Bgra8UnormSrgb));
         self.cascade_textures[1] = PingPongTex::new(&device, Vec2::new(screen_size.x as u32, screen_size.y as u32), "cascade tex 1", Some(TextureFormat::Bgra8UnormSrgb));
     }
@@ -223,9 +214,9 @@ impl RadianceCascades {
         input_distance_view: &TextureView,
         output_tex_view: &TextureView,
     ) {
-        let mut curr_cascade_idx = 0;
-        for i in (1..=self.params.cascade_count).rev() {
-            self.params.ray_count = if i < 1 {self.params.base_ray_count} else {self.params.base_ray_count.pow(i)};
+        let mut curr_cascade_tex_idx = 0;
+        for i in (0..self.params.cascade_count).rev() {
+            self.params.cascade_index = i;
             let cascades_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: Some("cascades bg1 unform buffer"),
                 contents: bytemuck::bytes_of(&self.params),
@@ -245,7 +236,7 @@ impl RadianceCascades {
                     },
                     BindGroupEntry {
                         binding: 2, 
-                        resource: wgpu::BindingResource::TextureView(&self.cascade_textures[1 - curr_cascade_idx].view),
+                        resource: wgpu::BindingResource::TextureView(&self.cascade_textures[1 - curr_cascade_tex_idx].view),
                     },
                     BindGroupEntry {
                         binding: 3,
@@ -271,7 +262,7 @@ impl RadianceCascades {
                     }
                 ]
             });
-            let target_view = if i > 1 {&self.cascade_textures[curr_cascade_idx].view} else {output_tex_view};
+            let target_view = if i > 0 {&self.cascade_textures[curr_cascade_tex_idx].view} else {output_tex_view};
             let mut pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("cascade pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
@@ -290,7 +281,7 @@ impl RadianceCascades {
             pass.set_bind_group(0, &cascades_bg0, &[]);
             pass.set_bind_group(1, &cascades_bg1, &[]);
             pass.draw(0..3, 0..1);
-            curr_cascade_idx = 1 - curr_cascade_idx;
+            curr_cascade_tex_idx = 1 - curr_cascade_tex_idx;
         }
     }
 }

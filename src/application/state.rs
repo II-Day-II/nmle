@@ -86,10 +86,15 @@ impl ApplicationState {
                         egui::Slider::new(&mut self.renderer.jfa.num_passes, 0..=20)
                             .text("jfa passes"), // TODO: replace with rc params
                     );
-                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.base_ray_count, 4..=16).text("base ray count"));
-                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.interval_split, 0.0..=0.5).text("interval size"));
+                    egui::ComboBox::from_label("base ray count")
+                        .selected_text(format!("{}", self.renderer.rc.params.base_ray_count))
+                        .show_ui(ui, |options| {
+                            options.selectable_value(&mut self.renderer.rc.params.base_ray_count, 4, "4");
+                            options.selectable_value(&mut self.renderer.rc.params.base_ray_count, 16, "16");
+                        });
+                    // ui.add(egui::Slider::new(&mut self.renderer.rc.params.base_ray_count, 4..=16).text("base ray count"));
                     ui.add(egui::Slider::new(&mut self.renderer.rc.params.angle_offset, 0.0..=1.0).text("angle offset"));
-                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.cascade_count, 1..=2).text("cascade count"));
+                    ui.add(egui::Slider::new(&mut self.renderer.rc.params.cascade_count, 1..=10).text("cascade count"));
                     ui.label(format!("{:0>7.4}ms", self.frame_time*1000.0));
                 });
             });
