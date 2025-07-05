@@ -1,13 +1,13 @@
 use vek::{FrustumPlanes, Mat4, Vec2};
 
 pub struct Camera {
-    offset: Vec2<f32>,
+    position: Vec2<f32>,
 }
 
 impl Camera {
     pub fn new() -> Self {
         Self {
-            offset: Vec2::new(0.0, 0.0),
+            position: Vec2::new(0.0, 0.0),
         }
     }
 
@@ -20,7 +20,7 @@ impl Camera {
             near: 0.0,
             far: 0.0,
         });
-        let trans: Mat4<f32> = Mat4::translation_2d(self.offset);
+        let trans: Mat4<f32> = Mat4::translation_2d(self.position);
         proj * trans
     }
 }

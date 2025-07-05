@@ -2,10 +2,7 @@ use egui_wgpu::ScreenDescriptor;
 use log::{debug, warn};
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance,
-    InstanceDescriptor, Queue, RenderPassColorAttachment, RenderPassDescriptor,
-    RequestAdapterOptions, Surface, SurfaceConfiguration, TextureViewDescriptor,
+    util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, ImageCopyTexture, Instance, InstanceDescriptor, Origin3d, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, Texture, TextureDescriptor, TextureDimension, TextureUsages, TextureView, TextureViewDescriptor
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -24,9 +21,12 @@ pub struct Renderer {
     config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
 
+    render_texture: Texture,
+    render_view: TextureView,
+
     pub gui_renderer: GuiRenderer,
 
-    renderables: HashMap<String, Renderable>,
+    renderables: HashMap<String, Arc<Renderable>>,
     passes: HashMap<String, DefaultPass>,
     global_buffers: HashMap<String, Buffer>,
 }
@@ -77,7 +77,7 @@ impl Renderer {
             .unwrap_or(surface_caps.formats[0]);
 
         let config = SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_DST,
             format: surface_format,
             width: size.width,
             height: size.height,
@@ -91,8 +91,11 @@ impl Renderer {
 
         // let default_pass = DefaultPass::new(&device, &config);
         // passes.insert("default".into(), default_pass);
+        let (render_texture, render_view) = create_render_texture(&device, &config, None);
+        debug!("Render texture created");
 
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
+        debug!("GUI renderer initialized");
 
         debug!("Renderer initialized");
         Self {
@@ -103,6 +106,9 @@ impl Renderer {
             surface,
             config,
             size,
+
+            render_texture,
+            render_view,
 
             gui_renderer,
 
@@ -141,15 +147,18 @@ impl Renderer {
         pipeline_tag: String,
         indices: &[u16],
         vertices: &[Vertex],
-    ) {
+    ) -> Arc<Renderable>
+    {
         debug!(
             "New renderable {} added, using pipeline {}",
             name, pipeline_tag
         );
+        let renderable = Arc::new(Renderable::new(&self.device, vertices, indices, pipeline_tag));
         self.renderables.insert(
             name,
-            Renderable::new(&self.device, vertices, indices, pipeline_tag),
+            renderable.clone(),
         );
+        renderable
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -158,12 +167,15 @@ impl Renderer {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            let (rt, rtv) = create_render_texture(&self.device, &self.config, None);
+            self.render_texture = rt;
+            self.render_view = rtv;
             debug!("Resized to {}x{}", new_size.width, new_size.height);
         }
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output
+        let surface_view = output
             .texture
             .create_view(&TextureViewDescriptor::default());
         let mut encoder = self
@@ -174,7 +186,7 @@ impl Renderer {
             let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("Main renderpass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
+                    view: &self.render_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -200,6 +212,26 @@ impl Renderer {
                 }
             }
         }
+
+        let src = ImageCopyTexture {
+            texture: &self.render_texture,
+            mip_level: 0,
+            origin: Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        };
+        let dst = ImageCopyTexture {
+            texture: &output.texture,
+            mip_level: 0,
+            origin: Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        };
+        let size = Extent3d {
+            width: output.texture.width(),
+            height: output.texture.height(),
+            depth_or_array_layers: 1,
+        };
+        encoder.copy_texture_to_texture(src, dst, size);
+
         // gui pass
         let screen_desc = ScreenDescriptor {
             size_in_pixels: [self.config.width, self.config.height],
@@ -209,7 +241,7 @@ impl Renderer {
             &self.device,
             &self.queue,
             &mut encoder,
-            &view,
+            &surface_view,
             &self.window,
             screen_desc,
         );
@@ -218,4 +250,41 @@ impl Renderer {
         output.present();
         Ok(())
     }
+}
+
+
+fn create_render_texture(
+    device: &Device,
+    config: &SurfaceConfiguration,
+    format_override: Option<wgpu::TextureFormat>,
+) -> (Texture, TextureView) {
+    let config_formats = [config.format.remove_srgb_suffix(), config.format.add_srgb_suffix()];
+    let final_formats = if let Some(fmt) = format_override {
+        [fmt.add_srgb_suffix(), fmt.remove_srgb_suffix()]
+    } else {
+        config_formats
+    };
+    let render_texture = device.create_texture(&TextureDescriptor {
+        label: Some("RenderTexture"),
+        size: Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: TextureDimension::D2,
+        format: if let Some(format) = format_override {
+            format
+        } else {
+            config.format
+        },
+        usage: TextureUsages::COPY_SRC
+            | TextureUsages::RENDER_ATTACHMENT
+            | TextureUsages::TEXTURE_BINDING
+            | TextureUsages::COPY_DST,
+        view_formats: &final_formats,
+    });
+    let render_view = render_texture.create_view(&TextureViewDescriptor::default());
+    (render_texture, render_view)
 }

@@ -4,4 +4,5 @@ mod pipeline;
 mod renderable;
 mod renderer;
 pub use self::renderable::Vertex;
+pub use self::renderable::Renderable;
 pub use self::renderer::Renderer;

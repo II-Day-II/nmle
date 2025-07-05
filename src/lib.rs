@@ -32,7 +32,7 @@ pub async fn run() -> anyhow::Result<()> {
     let mut start_time = instant::Instant::now();
 
     // TODO: determine if this is needed
-    event_loop.set_control_flow(ControlFlow::Wait);
+    event_loop.set_control_flow(ControlFlow::Poll);
     // run the event loop
     event_loop.run(move |e_event, elwt| {
         // timing

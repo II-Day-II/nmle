@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use log::debug;
 use wgpu::{
@@ -110,7 +111,7 @@ impl DefaultPass {
     pub fn draw<'a, 'b>(
         &'a self,
         render_pass: &mut RenderPass<'b>,
-        renderables: impl Iterator<Item = &'a Renderable>,
+        renderables: impl Iterator<Item = &'a Arc<Renderable>>,
     ) -> Result<(), wgpu::SurfaceError>
     where
         'a: 'b,
