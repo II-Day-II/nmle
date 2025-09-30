@@ -30,6 +30,7 @@ impl<'a> PipelineBuilder<'a> {
                 module: vertex_shader,
                 entry_point: vtx_entry_point.unwrap_or("main"),
                 buffers: &[VTX_LAYOUT],
+                compilation_options: Default::default(),
             },
             primitive: PrimitiveState {
                 // TODO: allow modification of more of this
@@ -67,6 +68,7 @@ impl<'a> PipelineBuilder<'a> {
             module: shader_module,
             entry_point: entry_point.unwrap_or("main"),
             targets: &[],
+            compilation_options: Default::default(),
         });
         self
     }

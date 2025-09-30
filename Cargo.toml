@@ -8,13 +8,14 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.79"
 bytemuck = {version = "1.14.3", features = ["derive"]}
-egui = "0.26.2"
-egui-wgpu = "0.26.2"
-egui-winit = "0.26.2"
+egui = "0.28"
+egui-wgpu = "0.28"
+egui-winit = {version = "0.28", default-features = false, features = ["links", "wayland", "x11"]}
 env_logger = "0.11.1"
 instant = "0.1.12"
 log = "0.4.20"
 pollster = "0.3.0"
 vek = {version = "0.16.1", features = ["bytemuck"]}
-wgpu = {version = "0.19.1", features = ["spirv"]}
+wgpu = {version = "0.20", features = ["spirv"]}
 winit = "0.29.10"
+
