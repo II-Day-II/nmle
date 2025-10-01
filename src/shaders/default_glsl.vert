@@ -22,7 +22,7 @@ const vec3 colors[4] = vec3[4](
 
 void main() 
 {
-    gl_Position = camera.view_proj * model.transform * in_position;
+    gl_Position = model.transform * camera.view_proj * in_position;
     out_uv = in_uv;
     out_color = colors[gl_VertexIndex % 4];
 }

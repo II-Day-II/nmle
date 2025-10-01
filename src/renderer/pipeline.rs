@@ -111,11 +111,11 @@ impl<'a> PipelineBuilder<'a> {
         }
 
         let pipeline = device.create_render_pipeline(&render_pipeline_descriptor);
-        Pipeline { layout, pipeline }
+        Pipeline { _layout: layout, pipeline }
     }
 }
 
 pub struct Pipeline {
     pub pipeline: RenderPipeline,
-    pub layout: PipelineLayout,
+    pub _layout: PipelineLayout,
 }

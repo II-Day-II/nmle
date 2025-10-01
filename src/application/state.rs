@@ -19,10 +19,9 @@ pub struct ApplicationState {
     pub renderer: Renderer,
     input: Input,
 
-    matrix_stack: Vec<(Mat4<f32>,MatrixInteractionType)>,
+    matrix_stack: Vec<(Mat4<f32>, MatrixInteractionType)>,
     show_full_matrix: bool,
     model: Model,
-    theta: f32,
 }
 
 struct Model {
@@ -83,7 +82,6 @@ impl ApplicationState {
             matrix_stack,
             show_full_matrix: false,
             model,
-            theta: 0.0,
         }
     }
     pub fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -104,84 +102,123 @@ impl ApplicationState {
             .input_state
             .egui_ctx()
             .run(raw_input, |ctx| {
-                egui::Window::new("egui window").show(ctx, |ui| {
+                egui::Window::new("Controls").show(ctx, |ui| {
                     ui.heading("Transform stack");
+                    
                     let mut remove_index = None;
-                    for (id, (mat, interaction_type)) in self.matrix_stack.iter_mut().enumerate() {
-                        ui.group(|ui| {
-                            let values = mat.as_mut_col_slice();
-                            ui.label(
-                                match interaction_type {
-                                    MatrixInteractionType::CustomMatrix => "Custom matrix",
-                                    MatrixInteractionType::RotationMatrixZ(_) => "Rotation",
-                                    MatrixInteractionType::ScaleMatrix2D(_) => "Scale",
-                                    MatrixInteractionType::TranslationMatrix2D(_) => "Translation",
-                            });
-                            if *interaction_type == MatrixInteractionType::CustomMatrix {
-                                egui::Grid::new(&format!("Matrix_{id}")).show(ui, |ui| {
-                                    for y in 0..4usize {
-                                        if !self.show_full_matrix && y == 2 {
-                                            continue;
-                                        }
-                                        for x in 0..4usize {
-                                            if !self.show_full_matrix && x == 2 {
-                                                continue;
+                    
+                    let mut from : Option<usize> = None;
+                    let mut to : Option<usize> = None;
+
+                    for (idx, (mat, interaction_type)) in self.matrix_stack.iter_mut().enumerate() {
+                        let frame = egui::Frame::default().inner_margin(1.0);
+                        let (_, _dropped_payload) = ui.dnd_drop_zone::<usize, ()>(frame, |ui| {
+                            let item_id = egui::Id::new(("matrix_stack_drag_and_drop", idx));
+                            let response = ui.group(|ui| {
+                                ui.dnd_drag_source(item_id, idx, |ui| {
+                                    ui.label(
+                                        match interaction_type {
+                                            MatrixInteractionType::CustomMatrix => "Custom matrix",
+                                            MatrixInteractionType::RotationMatrixZ(_) => "Rotation",
+                                            MatrixInteractionType::ScaleMatrix2D(_) => "Scale",
+                                            MatrixInteractionType::TranslationMatrix2D(_) => "Translation",
+                                    });
+                                });
+                                ui.group(|ui| {
+                                    let values = mat.as_mut_col_slice();
+                                    if *interaction_type == MatrixInteractionType::CustomMatrix {
+                                        egui::Grid::new(&format!("Matrix_{idx}")).show(ui, |ui| {
+                                            for y in 0..4usize {
+                                                if !self.show_full_matrix && y == 2 {
+                                                    continue;
+                                                }
+                                                for x in 0..4usize {
+                                                    if !self.show_full_matrix && x == 2 {
+                                                        continue;
+                                                    }
+                                                    ui.add(egui::DragValue::new(&mut values[x*4 + y]).speed(0.01));
+                                                }
+                                                ui.end_row();
                                             }
-                                            ui.add(egui::DragValue::new(&mut values[x*4 + y]).speed(0.01));
-                                        }
-                                        ui.end_row();
+                                        });
+                                    }
+                                    match interaction_type {
+                                        MatrixInteractionType::RotationMatrixZ(mut angle) => {
+                                            ui.label("Angle:");
+                                            ui.drag_angle(&mut angle);
+                                            *mat = Mat4::rotation_z(angle);
+                                            *interaction_type = MatrixInteractionType::RotationMatrixZ(angle);
+                                        },
+                                        MatrixInteractionType::TranslationMatrix2D(mut offset) => {
+                                            ui.add(egui::DragValue::new(&mut offset.x).speed(0.01).prefix("x: "));
+                                            ui.add(egui::DragValue::new(&mut offset.y).speed(0.01).prefix("y: "));
+                                            *mat = Mat4::translation_2d(offset);
+                                            *interaction_type = MatrixInteractionType::TranslationMatrix2D(offset);
+                                        },
+                                        MatrixInteractionType::ScaleMatrix2D(mut scale) => {
+                                            ui.add(egui::DragValue::new(&mut scale.x).speed(0.01).prefix("x: "));
+                                            ui.add(egui::DragValue::new(&mut scale.y).speed(0.01).prefix("y: "));
+                                            *mat = Mat4::scaling_3d(Vec3::new(scale.x, scale.y, 1.0));
+                                            *interaction_type = MatrixInteractionType::ScaleMatrix2D(scale);
+                                        },
+                                        _ => {},
                                     }
                                 });
-                            }
-                            match interaction_type {
-                                MatrixInteractionType::RotationMatrixZ(mut angle) => {
-                                    ui.label("Angle:");
-                                    ui.drag_angle(&mut angle);
-                                    *mat = Mat4::rotation_z(angle);
-                                    *interaction_type = MatrixInteractionType::RotationMatrixZ(angle);
-                                },
-                                MatrixInteractionType::TranslationMatrix2D(mut offset) => {
-                                    ui.add(egui::DragValue::new(&mut offset.x).speed(0.01).prefix("x: "));
-                                    ui.add(egui::DragValue::new(&mut offset.y).speed(0.01).prefix("y: "));
-                                    *mat = Mat4::translation_2d(offset);
-                                    *interaction_type = MatrixInteractionType::TranslationMatrix2D(offset);
-                                },
-                                MatrixInteractionType::ScaleMatrix2D(mut scale) => {
-                                    ui.add(egui::DragValue::new(&mut scale.x).speed(0.01).prefix("x: "));
-                                    ui.add(egui::DragValue::new(&mut scale.y).speed(0.01).prefix("y: "));
-                                    *mat = Mat4::scaling_3d(Vec3::new(scale.x, scale.y, 1.0));
-                                    *interaction_type = MatrixInteractionType::ScaleMatrix2D(scale);
-                                },
-                                _ => {},
-                            }
-                            if id > 0 {
+                            }).response;
+                            if idx > 0 {
                                 if ui.button("Remove matrix").clicked() {
-                                    remove_index = Some(id);
+                                    remove_index = Some(idx);
+                                }
+                            }
+                            // detect dragndrop
+                            if let Some(_) = response.dnd_hover_payload::<usize>() {
+                                // handle dropped item
+                                if let Some(dragged_payload) = response.dnd_release_payload() {
+                                    // item was dropped here
+                                    from = Some(*dragged_payload);
+                                    to = Some(idx);
                                 }
                             }
                         });
+                    } // end for
+                    
+                    if let (Some(from), Some(mut to)) = (from, to) {
+                        // rearrange matrices
+                        let item = self.matrix_stack.remove(from);
+                        to = to.min(self.matrix_stack.len());
+                        self.matrix_stack.insert(to, item);
                     }
-                    if let Some(id) = remove_index {
-                        self.matrix_stack.remove(id);
+
+
+                    if let Some(idx) = remove_index {
+                        self.matrix_stack.remove(idx);
                     }
 
                     ui.menu_button("Add matrix", |ui| {
-                        if ui.button("Custom matrix").clicked() {
+                        let custom_clicked = ui.button("Custom matrix").clicked();
+                        let rotation_clicked = ui.button("Rotation").clicked();
+                        let scale_clicked = ui.button("Scale").clicked();
+                        let translation_clicked = ui.button("Translation").clicked();
+                        let any_clicked = custom_clicked || rotation_clicked || scale_clicked || translation_clicked;
+                        if custom_clicked {
                             self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::CustomMatrix));
                         }
-                        if ui.button("Rotation").clicked() {
+                        else if rotation_clicked {
                             self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::RotationMatrixZ(0.0)));
                         }
-                        if ui.button("Scale").clicked() {
+                        else if scale_clicked {
                             self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::ScaleMatrix2D(Vec2::new(1.0,1.0))));
                         }
-                        if ui.button("Translation").clicked() {
+                        else if translation_clicked {
                             self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::TranslationMatrix2D(Vec2::new(0.0,0.0))));
+                        }
+                        if any_clicked {
+                            ui.close_menu();
                         }
                     });
                     ui.checkbox(&mut self.show_full_matrix, "4x4 Matrices");
+                    ui.label("Matrices are applied from bottom to top.");
                     ui.separator();
-                    ui.drag_angle(&mut self.theta);
                 });
             });
         self.renderer.gui_renderer.prepare(egui_output);
@@ -192,8 +229,7 @@ impl ApplicationState {
         trace!("Update called with dt={}", dt_seconds);
         // self.theta += dt_seconds as f32 * std::f32::consts::PI;
         let view_proj = self.camera.get_matrix(self.renderer.aspect());
-        let rot = Mat4::rotation_z(self.theta);
-        let mat = view_proj * rot;
+        let mat = view_proj;
 
         self.model.transform = self.matrix_stack.iter().fold(Mat4::identity(), |acc, m| {acc * m.0}); // TODO: ordering of operations here is prob wrong
 

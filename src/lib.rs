@@ -34,7 +34,7 @@ pub async fn run() -> anyhow::Result<()> {
     // TODO: determine if this is needed
     event_loop.set_control_flow(ControlFlow::Poll);
     // run the event loop
-    event_loop.run(move |e_event, elwt| {
+    event_loop.run(move |e_event, event_loop_window_target| {
         // timing
         let now = instant::Instant::now();
         let delta = now - start_time;
@@ -47,7 +47,7 @@ pub async fn run() -> anyhow::Result<()> {
                     event: WindowEvent::CloseRequested,
                     window_id,
                 } if window_id == window.id() => {
-                    elwt.exit();
+                    event_loop_window_target.exit();
                 }
                 Event::WindowEvent {
                     event: WindowEvent::RedrawRequested,
@@ -55,7 +55,7 @@ pub async fn run() -> anyhow::Result<()> {
                 } if window_id == window.id() => match state.draw() {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => state.renderer.resize(state.renderer.size),
-                    Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
+                    Err(wgpu::SurfaceError::OutOfMemory) => event_loop_window_target.exit(),
                     Err(e) => error!("{}", e),
                 },
                 Event::WindowEvent {
