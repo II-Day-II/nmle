@@ -143,23 +143,20 @@ impl ApplicationState {
                                         });
                                     }
                                     match interaction_type {
-                                        MatrixInteractionType::RotationMatrixZ(mut angle) => {
+                                        MatrixInteractionType::RotationMatrixZ(angle) => {
                                             ui.label("Angle:");
-                                            ui.drag_angle(&mut angle);
-                                            *mat = Mat4::rotation_z(angle);
-                                            *interaction_type = MatrixInteractionType::RotationMatrixZ(angle);
+                                            ui.drag_angle(angle);
+                                            *mat = Mat4::rotation_z(*angle);
                                         },
-                                        MatrixInteractionType::TranslationMatrix2D(mut offset) => {
+                                        MatrixInteractionType::TranslationMatrix2D(offset) => {
                                             ui.add(egui::DragValue::new(&mut offset.x).speed(0.01).prefix("x: "));
                                             ui.add(egui::DragValue::new(&mut offset.y).speed(0.01).prefix("y: "));
-                                            *mat = Mat4::translation_2d(offset);
-                                            *interaction_type = MatrixInteractionType::TranslationMatrix2D(offset);
+                                            *mat = Mat4::translation_2d(*offset);
                                         },
-                                        MatrixInteractionType::ScaleMatrix2D(mut scale) => {
+                                        MatrixInteractionType::ScaleMatrix2D(scale) => {
                                             ui.add(egui::DragValue::new(&mut scale.x).speed(0.01).prefix("x: "));
                                             ui.add(egui::DragValue::new(&mut scale.y).speed(0.01).prefix("y: "));
                                             *mat = Mat4::scaling_3d(Vec3::new(scale.x, scale.y, 1.0));
-                                            *interaction_type = MatrixInteractionType::ScaleMatrix2D(scale);
                                         },
                                         _ => {},
                                     }

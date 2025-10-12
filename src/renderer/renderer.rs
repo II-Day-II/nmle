@@ -81,7 +81,7 @@ impl Renderer {
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::Fifo,
+            present_mode: wgpu::PresentMode::AutoVsync,
             desired_maximum_frame_latency: 2, // max images in flight for swapchain
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
