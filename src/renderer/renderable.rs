@@ -22,6 +22,12 @@ impl Vertex {
             attributes: &ATTRIBS,
         }
     }
+    pub fn new(position: Vec4<f32>, uv: Vec4<f32>) -> Self {
+        Self {
+            position,
+            uv,
+        }
+    }
 }
 
 pub struct Renderable {
