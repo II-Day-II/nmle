@@ -28,7 +28,8 @@ pub struct Renderer {
 
     renderables: HashMap<String, Arc<Renderable>>,
     passes: HashMap<String, DefaultPass>,
-    global_buffers: HashMap<String, Buffer>,
+    global_buffers: Vec<Buffer>,
+    buffer_index_map: HashMap<String, usize>,
 }
 
 impl Renderer {
@@ -36,7 +37,7 @@ impl Renderer {
         let size = window.inner_size();
         let renderables = HashMap::new();
         let passes = HashMap::new();
-        let buffers = HashMap::new();
+        let buffers = Vec::new();
 
         let backends = wgpu::Backends::PRIMARY;
         let instance = Instance::new(InstanceDescriptor {
@@ -115,6 +116,7 @@ impl Renderer {
             renderables,
             passes,
             global_buffers: buffers,
+            buffer_index_map: HashMap::new(),
         }
     }
 
@@ -122,16 +124,17 @@ impl Renderer {
         self.size.width as f32 / self.size.height as f32
     }
 
-    pub fn add_global_buffer(&mut self, name: String, data: &[u8], usage: BufferUsages) {
+    pub fn add_global_buffer(&mut self, name: String, idx: usize, data: &[u8], usage: BufferUsages) {
         let buffer = self.device.create_buffer_init(&BufferInitDescriptor {
             label: Some(name.as_str()),
             contents: data,
             usage,
         });
-        self.global_buffers.insert(name, buffer);
+        self.buffer_index_map.insert(name, idx);
+        self.global_buffers.insert(idx, buffer);
     }
     pub fn write_buffer(&mut self, name: &str, data: &[u8]) {
-        if let Some(buffer) = self.global_buffers.get(name) {
+        if let Some(buffer) = self.global_buffers.get(*self.buffer_index_map.get(name).unwrap()) {
             self.queue.write_buffer(buffer, 0, data);
         }
     }

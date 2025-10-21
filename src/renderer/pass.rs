@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use log::debug;
@@ -27,11 +26,11 @@ impl DefaultPass {
     pub fn new(
         device: &Device,
         config: &SurfaceConfiguration,
-        buffers: &HashMap<String, Buffer>,
+        buffers: &Vec<Buffer>,
     ) -> Self {
         let mut bind_groups = Vec::new();
         let layout_entries = buffers
-            .values()
+            .iter()
             .enumerate()
             .map(|(i, buf)| {
                 BindGroupLayoutEntry {
@@ -51,7 +50,7 @@ impl DefaultPass {
             })
             .collect::<Vec<_>>();
         let bindgroup_entries = buffers
-            .values()
+            .iter()
             .enumerate()
             .map(|(i, buf)| BindGroupEntry {
                 binding: i as u32,

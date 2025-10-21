@@ -61,12 +61,20 @@ impl ApplicationState {
         let camera = Camera::new();
         renderer.add_global_buffer(
             "camera".into(),
+            0,
             bytemuck::cast_slice(camera.get_matrix(renderer.aspect()).as_col_slice()),
             BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         );
         renderer.add_global_buffer(
             "transform".into(),
+            1,
             bytemuck::cast_slice(model.transform.as_col_slice()),
+            BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        );
+        renderer.add_global_buffer(
+            "camera_pan_zoom".into(),
+            2,
+            bytemuck::cast_slice(&[camera.pan_and_zoom_data()]),
             BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         );
         renderer.add_pass("Default".into());
@@ -100,6 +108,13 @@ impl ApplicationState {
             .input_state
             .egui_ctx()
             .run(raw_input, |ctx| {
+                egui::Window::new( "Debug").show(ctx, |ui| {
+                    ui.label(format!("Camera position: {}", self.camera.position));
+                    ui.label(format!("Camera zoom: {}", self.camera.zoom));
+                    ui.label(format!("Mouse position: {:?}", self.input.current_mouse_pos));
+                    ui.label(format!("Last position: {:?}", self.input.last_mouse_pos));
+                    ui.label(format!("Mouse delta: {:?}", self.input.mouse_delta));
+                });
                 egui::Window::new("Controls")
                 .max_height(self.renderer.size.height as f32 - 128.0)
                 .default_width(128.0)
@@ -239,16 +254,23 @@ impl ApplicationState {
 
     pub fn update(&mut self, dt_seconds: f64) {
         trace!("Update called with dt={}", dt_seconds);
-        // self.theta += dt_seconds as f32 * std::f32::consts::PI;
+
+        if !self.renderer.gui_renderer.input_state.egui_ctx().is_using_pointer(){
+            self.camera.pan_and_zoom(&self.input, Vec2::new(self.renderer.size.width, self.renderer.size.height).as_());
+        }
+
+        self.input.update();
+
         let view_proj = self.camera.get_matrix(self.renderer.aspect());
         let mat = view_proj;
 
-        self.model.transform = self.matrix_stack.iter().fold(Mat4::identity(), |acc, m| {acc * m.0}); // TODO: ordering of operations here is prob wrong
+        self.model.transform = self.matrix_stack.iter().fold(Mat4::identity(), |acc, m| {acc * m.0}); 
 
+        self.renderer.write_buffer("camera", bytemuck::cast_slice(mat.as_col_slice()));
+        
         self.renderer.write_buffer("transform", bytemuck::cast_slice(self.model.transform.as_col_slice()));
 
-        self.renderer
-            .write_buffer("camera", bytemuck::cast_slice(mat.as_col_slice()));
+        self.renderer.write_buffer("camera_pan_zoom", bytemuck::cast_slice(&[self.camera.pan_and_zoom_data()]));
     }
 
     pub fn handle_event_input(&mut self, window: &Window, event: &Event<()>) -> bool {
