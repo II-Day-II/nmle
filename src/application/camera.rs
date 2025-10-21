@@ -36,13 +36,15 @@ impl Camera {
     pub fn pan_and_zoom_data(&self) -> Self {
         Self {..*self}
     }
-    pub fn pan_and_zoom(&mut self, input: &Input, window_size: Vec2<f32>) {
+    pub fn pan(&mut self, input: &Input, window_size: Vec2<f32>) {
         if input.clicking[0] {
             let manual_delta = Vec2::new(input.current_mouse_pos.x, input.current_mouse_pos.y) - Vec2::new(input.last_mouse_pos.x, input.last_mouse_pos.y);
             let auto_delta = Vec2::<f64>::from(input.mouse_delta).as_();
             let normalized_delta = Vec2::new(1.0, -1.0) * (auto_delta + manual_delta.as_()) / window_size;
             self.position += normalized_delta;
         }
+    }
+    pub fn zoom(&mut self, input: &Input) {
         self.zoom += Self::SCROLL_SPEED * input.scroll_delta as f32;
         self.zoom = self.zoom.clamp(0.001, 10.0);
     }

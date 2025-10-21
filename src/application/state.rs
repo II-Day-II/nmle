@@ -255,8 +255,11 @@ impl ApplicationState {
     pub fn update(&mut self, dt_seconds: f64) {
         trace!("Update called with dt={}", dt_seconds);
 
-        if !self.renderer.gui_renderer.input_state.egui_ctx().is_using_pointer(){
-            self.camera.pan_and_zoom(&self.input, Vec2::new(self.renderer.size.width, self.renderer.size.height).as_());
+        if !self.renderer.gui_renderer.input_state.egui_ctx().is_using_pointer() {
+            self.camera.pan(&self.input, Vec2::new(self.renderer.size.width, self.renderer.size.height).as_());
+            if !self.renderer.gui_renderer.input_state.egui_ctx().is_pointer_over_area() {
+                self.camera.zoom(&self.input);
+            }
         }
 
         self.input.update();
