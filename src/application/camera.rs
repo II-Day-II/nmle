@@ -45,7 +45,7 @@ impl Camera {
         }
     }
     pub fn zoom(&mut self, input: &Input) {
-        self.zoom += Self::SCROLL_SPEED * input.scroll_delta as f32;
+        self.zoom *= 1.0 + Self::SCROLL_SPEED * input.scroll_delta as f32;
         self.zoom = self.zoom.clamp(0.001, 10.0);
     }
 }
