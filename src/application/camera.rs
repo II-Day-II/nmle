@@ -5,6 +5,11 @@ use crate::application::input::Input;
 
 #[repr(C)]
 #[derive(Copy, Clone, Zeroable, Pod)]
+pub struct PanAndZoom {
+    pub position: Vec2<f32>,
+    pub zoom: f32,
+    aspect: f32,
+}
 pub struct Camera {
     pub position: Vec2<f32>,
     pub zoom: f32,
@@ -15,7 +20,7 @@ impl Camera {
     pub fn new() -> Self {
         Self {
             position: Vec2::new(0.0, 0.0),
-            zoom: 1.0,
+            zoom: 0.2,
         }
     }
 
@@ -30,11 +35,15 @@ impl Camera {
         });
         let scale = Mat4::scaling_3d(self.zoom);
         let translation: Mat4<f32> = Mat4::translation_2d(self.position);
-        proj * translation * scale
+        proj * scale * translation
     }
 
-    pub fn pan_and_zoom_data(&self) -> Self {
-        Self {..*self}
+    pub fn pan_and_zoom_data(&self, aspect: f32) -> PanAndZoom {
+        PanAndZoom {
+            position: self.position,
+            zoom: self.zoom,
+            aspect: aspect,
+        }
     }
     pub fn pan(&mut self, input: &Input, window_size: Vec2<f32>) {
         if input.clicking[0] {

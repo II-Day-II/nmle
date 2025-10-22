@@ -74,9 +74,11 @@ impl ApplicationState {
         renderer.add_global_buffer(
             "camera_pan_zoom".into(),
             2,
-            bytemuck::cast_slice(&[camera.pan_and_zoom_data()]),
+            bytemuck::cast_slice(&[camera.pan_and_zoom_data(renderer.aspect())]),
             BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         );
+        // now that the renderer knows about this buffer... we can enable its grid pass
+        renderer.add_grid_pass();
         renderer.add_pass("Default".into());
 
         debug!("Application state initialized");
@@ -273,7 +275,7 @@ impl ApplicationState {
         
         self.renderer.write_buffer("transform", bytemuck::cast_slice(self.model.transform.as_col_slice()));
 
-        self.renderer.write_buffer("camera_pan_zoom", bytemuck::cast_slice(&[self.camera.pan_and_zoom_data()]));
+        self.renderer.write_buffer("camera_pan_zoom", bytemuck::cast_slice(&[self.camera.pan_and_zoom_data(self.renderer.aspect())]));
     }
 
     pub fn handle_event_input(&mut self, window: &Window, event: &Event<()>) -> bool {

@@ -6,6 +6,8 @@ use wgpu::{
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
+use crate::renderer::pass;
+
 use super::{
     gui_renderer::GuiRenderer,
     pass::DefaultPass,
@@ -28,6 +30,9 @@ pub struct Renderer {
 
     renderables: HashMap<String, Arc<Renderable>>,
     passes: HashMap<String, DefaultPass>,
+
+    grid_pass: Option<DefaultPass>,
+
     global_buffers: Vec<Buffer>,
     buffer_index_map: HashMap<String, usize>,
 }
@@ -98,6 +103,9 @@ impl Renderer {
         let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
         debug!("GUI renderer initialized");
 
+        let grid_pass = None;
+        
+
         debug!("Renderer initialized");
         Self {
             _instance: instance,
@@ -114,6 +122,7 @@ impl Renderer {
             gui_renderer,
 
             renderables,
+            grid_pass,
             passes,
             global_buffers: buffers,
             buffer_index_map: HashMap::new(),
@@ -142,6 +151,10 @@ impl Renderer {
     pub fn add_pass(&mut self, name: String) {
         let pass = DefaultPass::new(&self.device, &self.config, &self.global_buffers);
         self.passes.insert(name, pass);
+    }
+
+    pub fn add_grid_pass(&mut self) {
+        self.grid_pass = Some(DefaultPass::new_grid(&self.device, &self.config,&self.global_buffers));
     }
 
     pub fn add_renderable(
@@ -184,6 +197,26 @@ impl Renderer {
         let mut encoder = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor::default());
+        // grid pass
+        {
+            let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+                label: Some("Grid renderpass"),
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &self.render_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None, // TODO: might need depth
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            if let Some(pass)=  &self.grid_pass {
+                pass::draw_grid(&mut render_pass, pass);
+            }
+        }        
         // main pass
         {
             let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
@@ -192,7 +225,7 @@ impl Renderer {
                     view: &self.render_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
                     },
                 })],

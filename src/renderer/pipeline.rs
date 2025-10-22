@@ -16,8 +16,9 @@ pub struct PipelineBuilder<'a> {
 
 #[allow(dead_code)]
 impl<'a> PipelineBuilder<'a> {
-    pub fn new(vertex_shader: &'a ShaderModule, vtx_entry_point: Option<&'a str>) -> Self {
+    pub fn new(vertex_shader: &'a ShaderModule, vtx_entry_point: Option<&'a str>, needs_vtx_buffer: bool) -> Self {
         const VTX_LAYOUT: VertexBufferLayout = Vertex::desc();
+        let vtx_buffer_layouts : &[VertexBufferLayout] = if needs_vtx_buffer {&[VTX_LAYOUT]} else {&[]};
         let pipeline_layout_descriptor = PipelineLayoutDescriptor {
             label: Some("PipelineLayout"),
             bind_group_layouts: &[],   // TODO: get bind group layouts in here
@@ -29,7 +30,7 @@ impl<'a> PipelineBuilder<'a> {
             vertex: VertexState {
                 module: vertex_shader,
                 entry_point: vtx_entry_point.unwrap_or("main"),
-                buffers: &[VTX_LAYOUT],
+                buffers: vtx_buffer_layouts,
                 compilation_options: Default::default(),
             },
             primitive: PrimitiveState {
