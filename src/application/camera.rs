@@ -16,7 +16,8 @@ pub struct Camera {
 }
 
 impl Camera {
-    const SCROLL_SPEED: f32 = 0.1;
+    const SCROLL_SPEED: f32 = 0.05;
+
     pub fn new() -> Self {
         Self {
             position: Vec2::new(0.0, 0.0),
@@ -50,11 +51,11 @@ impl Camera {
             let manual_delta = Vec2::new(input.current_mouse_pos.x, input.current_mouse_pos.y) - Vec2::new(input.last_mouse_pos.x, input.last_mouse_pos.y);
             let auto_delta = Vec2::<f64>::from(input.mouse_delta).as_();
             let normalized_delta = Vec2::new(1.0, -1.0) * (auto_delta + manual_delta.as_()) / window_size;
-            self.position += normalized_delta;
+            self.position += normalized_delta * Vec2::new(window_size.x / window_size.y, 1.0) / self.zoom;
         }
     }
     pub fn zoom(&mut self, input: &Input) {
         self.zoom *= 1.0 + Self::SCROLL_SPEED * input.scroll_delta as f32;
-        self.zoom = self.zoom.clamp(0.001, 10.0);
+        self.zoom = self.zoom.clamp(0.01, 10.0);
     }
 }
