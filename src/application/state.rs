@@ -114,8 +114,12 @@ impl ApplicationState {
                     ui.label(format!("Camera position: {}", self.camera.position));
                     ui.label(format!("Camera zoom: {}", self.camera.zoom));
                     ui.label(format!("Mouse position: {:?}", self.input.current_mouse_pos));
-                    ui.label(format!("Last position: {:?}", self.input.last_mouse_pos));
                     ui.label(format!("Mouse delta: {:?}", self.input.mouse_delta));
+                    let grid_level = self.camera.zoom.log10() + 3.0;
+                    ui.label(format!("grid_level: {}", grid_level));
+                    ui.label(format!("grid_floor: {}", grid_level.floor()));
+                    ui.label(format!("grid_ceil: {}", grid_level.ceil()));
+                    ui.label(format!("t: {}", grid_level - grid_level.floor()));
                 });
                 egui::Window::new("Controls")
                 .max_height(self.renderer.size.height as f32 - 128.0)
