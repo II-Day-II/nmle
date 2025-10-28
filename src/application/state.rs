@@ -19,7 +19,7 @@ pub struct ApplicationState {
     pub renderer: Renderer,
     input: Input,
 
-    matrix_stack: Vec<(Mat4<f32>, MatrixInteractionType)>,
+    matrix_stack: Vec<(Mat4<f32>, MatrixInteractionType, bool)>,
     show_full_matrix: bool,
     model: Model,
 }
@@ -57,7 +57,7 @@ impl ApplicationState {
             _renderable, 
             transform: Mat4::identity()
         };
-        let matrix_stack = vec![(Mat4::identity(),MatrixInteractionType::CustomMatrix)];
+        let matrix_stack = vec![(Mat4::identity(),MatrixInteractionType::CustomMatrix, true)];
         let camera = Camera::new();
         renderer.add_global_buffer(
             "camera".into(),
@@ -110,6 +110,8 @@ impl ApplicationState {
             .input_state
             .egui_ctx()
             .run(raw_input, |ctx| {
+                #[cfg(debug_assertions)] // doesn't exclusively mean we're building in debug mode,
+                                         // but close enough
                 egui::Window::new( "Debug").show(ctx, |ui| {
                     ui.label(format!("Camera position: {}", self.camera.position));
                     ui.label(format!("Camera zoom: {}", self.camera.zoom));
@@ -135,7 +137,7 @@ impl ApplicationState {
                     let row_height = 5.5 + (self.show_full_matrix as u8 as f32) * ui.text_style_height(&egui::TextStyle::Body);
                     let total_rows = self.matrix_stack.len();
                     egui::ScrollArea::vertical().show_rows(ui, row_height, total_rows,|ui, row_range| {
-                        for (idx, (mat, interaction_type)) in self.matrix_stack[row_range].iter_mut().enumerate() {
+                        for (idx, (mat, interaction_type, enabled)) in self.matrix_stack[row_range].iter_mut().enumerate() {
                             let frame = egui::Frame::default().inner_margin(1.0);
                             // specify zone for drag n drop
                             let (_, _dropped_payload) = ui.dnd_drop_zone::<usize, ()>(frame, |ui| {
@@ -143,16 +145,20 @@ impl ApplicationState {
                                 // track dragging events
                                 let response = ui.group(|ui| {
                                     // make list elements draggable by their names
-                                    ui.dnd_drag_source(item_id, idx, |ui| {
-                                        ui.label(
-                                            match interaction_type {
-                                                MatrixInteractionType::CustomMatrix => "Custom matrix",
-                                                MatrixInteractionType::RotationMatrixZ(_) => "Rotation",
-                                                MatrixInteractionType::ScaleMatrix2D(_) => "Scale",
-                                                MatrixInteractionType::TranslationMatrix2D(_) => "Translation",
+                                    ui.horizontal(|ui| {
+                                        ui.dnd_drag_source(item_id, idx, |ui| {
+                                            ui.label(
+                                                match interaction_type {
+                                                    MatrixInteractionType::CustomMatrix => "Custom matrix",
+                                                    MatrixInteractionType::RotationMatrixZ(_) => "Rotation",
+                                                    MatrixInteractionType::ScaleMatrix2D(_) => "Scale",
+                                                    MatrixInteractionType::TranslationMatrix2D(_) => "Translation",
+                                            });
                                         });
+                                        if idx > 0 {
+                                            ui.checkbox(enabled, "Active?");
+                                        }
                                     });
-
                                     // matrix list entry
                                     ui.group(|ui| {
                                         let values = mat.as_mut_col_slice();
@@ -234,16 +240,16 @@ impl ApplicationState {
                         let translation_clicked = ui.button("Translation").clicked();
                         let any_clicked = custom_clicked || rotation_clicked || scale_clicked || translation_clicked;
                         if custom_clicked {
-                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::CustomMatrix));
+                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::CustomMatrix, true));
                         }
                         else if rotation_clicked {
-                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::RotationMatrixZ(0.0)));
+                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::RotationMatrixZ(0.0), true));
                         }
                         else if scale_clicked {
-                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::ScaleMatrix2D(Vec2::new(1.0,1.0))));
+                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::ScaleMatrix2D(Vec2::new(1.0,1.0)), true));
                         }
                         else if translation_clicked {
-                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::TranslationMatrix2D(Vec2::new(0.0,0.0))));
+                            self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::TranslationMatrix2D(Vec2::new(0.0,0.0)), true));
                         }
                         if any_clicked {
                             ui.close_menu();
@@ -273,7 +279,7 @@ impl ApplicationState {
         let view_proj = self.camera.get_matrix(self.renderer.aspect());
         let mat = view_proj;
 
-        self.model.transform = self.matrix_stack.iter().fold(Mat4::identity(), |acc, m| {acc * m.0}); 
+        self.model.transform = self.matrix_stack.iter().fold(Mat4::identity(), |acc, m| {acc * if m.2 {m.0} else {Mat4::identity()}}); 
 
         self.renderer.write_buffer("camera", bytemuck::cast_slice(mat.as_col_slice()));
         

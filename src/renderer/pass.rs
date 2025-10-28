@@ -130,7 +130,7 @@ impl DefaultPass {
         let mut builder = PipelineBuilder::new(&v_shader_spv, Some("main"), true);
         let pipeline = builder
             .with_fragment_shader(&f_shader_spv, Some("main"))
-            .with_cull_mode(wgpu::Face::Back)
+            //.with_cull_mode(wgpu::Face::Back)
             .add_fragment_target(Some(wgpu::ColorTargetState {
                 format: config.format,
                 blend: Some(BlendState::REPLACE),
