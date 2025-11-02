@@ -29,7 +29,7 @@ impl<'a> PipelineBuilder<'a> {
             layout: None,
             vertex: VertexState {
                 module: vertex_shader,
-                entry_point: vtx_entry_point.unwrap_or("main"),
+                entry_point: vtx_entry_point,
                 buffers: vtx_buffer_layouts,
                 compilation_options: Default::default(),
             },
@@ -51,6 +51,7 @@ impl<'a> PipelineBuilder<'a> {
             depth_stencil: None,
             fragment: None,
             multiview: None,
+            cache: None,
         };
         Self {
             pipeline_layout_descriptor,
@@ -67,7 +68,7 @@ impl<'a> PipelineBuilder<'a> {
     ) -> &mut Self {
         self.render_pipeline_descriptor.fragment = Some(FragmentState {
             module: shader_module,
-            entry_point: entry_point.unwrap_or("main"),
+            entry_point: entry_point,
             targets: &[],
             compilation_options: Default::default(),
         });

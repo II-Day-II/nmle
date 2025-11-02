@@ -4,7 +4,7 @@ use log::{debug, trace};
 use std::sync::Arc;
 use vek::{Mat4, Vec4, Vec3, Vec2};
 use wgpu::BufferUsages;
-use winit::{event::Event, window::Window};
+use winit::{window::Window};
 
 #[derive(PartialEq)]
 enum MatrixInteractionType {
@@ -17,11 +17,13 @@ enum MatrixInteractionType {
 pub struct ApplicationState {
     camera: Camera,
     pub renderer: Renderer,
-    input: Input,
+    pub input: Input,
 
     matrix_stack: Vec<(Mat4<f32>, MatrixInteractionType, bool)>,
     show_full_matrix: bool,
     model: Model,
+
+    last_timestamp: instant::Instant,
 }
 
 struct Model {
@@ -90,9 +92,12 @@ impl ApplicationState {
             matrix_stack,
             show_full_matrix: false,
             model,
+
+            last_timestamp: instant::Instant::now(),
         }
     }
     pub fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
+        self.renderer.window.request_redraw();
         self.update_gui();
         // TODO: update renderer buffers and such
         self.renderer.render()
@@ -252,7 +257,7 @@ impl ApplicationState {
                             self.matrix_stack.push((Mat4::identity(), MatrixInteractionType::TranslationMatrix2D(Vec2::new(0.0,0.0)), true));
                         }
                         if any_clicked {
-                            ui.close_menu();
+                            ui.close();
                         }
                     });
                     ui.checkbox(&mut self.show_full_matrix, "4x4 Matrices");
@@ -264,7 +269,11 @@ impl ApplicationState {
     }
 
 
-    pub fn update(&mut self, dt_seconds: f64) {
+    pub fn update(&mut self) {
+        let now = instant::Instant::now();
+        let delta = now - self.last_timestamp;
+        self.last_timestamp = now;
+        let dt_seconds = delta.as_secs_f64();
         trace!("Update called with dt={}", dt_seconds);
 
         if !self.renderer.gui_renderer.input_state.egui_ctx().is_using_pointer() {
@@ -288,16 +297,4 @@ impl ApplicationState {
         self.renderer.write_buffer("camera_pan_zoom", bytemuck::cast_slice(&[self.camera.pan_and_zoom_data(self.renderer.aspect())]));
     }
 
-    pub fn handle_event_input(&mut self, window: &Window, event: &Event<()>) -> bool {
-        if let Event::WindowEvent { window_id, event } = event {
-            if *window_id == window.id() {
-                let _ = self
-                    .renderer
-                    .gui_renderer
-                    .input_state
-                    .on_window_event(window, event);
-            }
-        }
-        self.input.handle(&window.id(), event)
-    }
 }

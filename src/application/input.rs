@@ -1,6 +1,6 @@
 use log::trace;
 use winit::{
-    dpi::PhysicalPosition, event::{DeviceEvent, Event, KeyEvent, WindowEvent}, window::WindowId
+    dpi::PhysicalPosition, event::{KeyEvent, WindowEvent}, 
 };
 
 pub struct Input {
@@ -23,25 +23,6 @@ impl Input {
         }
     }
 
-    pub fn handle(&mut self, w_id: &WindowId, event: &Event<()>) -> bool {
-        match event {
-            Event::WindowEvent {
-                window_id,
-                event:
-                    WindowEvent::KeyboardInput {
-                        device_id: _,
-                        event,
-                        is_synthetic: _,
-                    },
-            } if window_id == w_id => self.keyboard_input(event),
-            Event::WindowEvent { window_id, event } if window_id == w_id => self.mouse_input(event),
-            Event::DeviceEvent {
-                device_id: _,
-                event: DeviceEvent::MouseMotion { delta },
-            } => self.mouse_movement(delta),
-            _ => false,
-        }
-    }
     pub fn keyboard_input(&mut self, event: &KeyEvent) -> bool {
         // TODO: handle keyboard input
         let KeyEvent {
@@ -82,7 +63,7 @@ impl Input {
                         *y as f64
                     },
                     winit::event::MouseScrollDelta::PixelDelta(PhysicalPosition{y, ..}) => {
-                        y * 8.0
+                        *y / 100.0 // this roughly corresponds to the same amound of zoom on web (firefox) and native
                     }
                 };
                 true

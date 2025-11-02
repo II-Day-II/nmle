@@ -2,7 +2,7 @@ use egui_wgpu::ScreenDescriptor;
 use log::{debug, warn};
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, ImageCopyTexture, Instance, InstanceDescriptor, Origin3d, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, Texture, TextureDescriptor, TextureDimension, TextureUsages, TextureView, TextureViewDescriptor
+    util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferUsages, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, Instance, InstanceDescriptor, Origin3d, Queue, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, Surface, SurfaceConfiguration, TexelCopyTextureInfo, Texture, TextureDescriptor, TextureDimension, TextureUsages, TextureView, TextureViewDescriptor
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -45,7 +45,7 @@ impl Renderer {
         let buffers = Vec::new();
 
         let backends = wgpu::Backends::PRIMARY;
-        let instance = Instance::new(InstanceDescriptor {
+        let instance = Instance::new(&InstanceDescriptor {
             backends,
             ..Default::default()
         });
@@ -67,8 +67,8 @@ impl Renderer {
                     label: Some("Device"),
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
+                    ..Default::default()
                 },
-                None,
             )
             .await
             .unwrap();
@@ -100,7 +100,7 @@ impl Renderer {
         let (render_texture, render_view) = create_render_texture(&device, &config, None);
         debug!("Render texture created");
 
-        let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window);
+        let gui_renderer = GuiRenderer::new(&device, surface_format, None, 1, &window.clone());
         debug!("GUI renderer initialized");
 
         let grid_pass = None;
@@ -208,6 +208,7 @@ impl Renderer {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None, // TODO: might need depth
                 timestamp_writes: None,
@@ -228,6 +229,7 @@ impl Renderer {
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None, // TODO: add depth
                 occlusion_query_set: None,
@@ -249,13 +251,13 @@ impl Renderer {
             }
         }
 
-        let src = ImageCopyTexture {
+        let src = TexelCopyTextureInfo {
             texture: &self.render_texture,
             mip_level: 0,
             origin: Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         };
-        let dst = ImageCopyTexture {
+        let dst = TexelCopyTextureInfo {
             texture: &output.texture,
             mip_level: 0,
             origin: Origin3d::ZERO,

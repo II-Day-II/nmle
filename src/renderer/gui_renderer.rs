@@ -1,5 +1,5 @@
 use egui::FullOutput;
-use egui_wgpu::ScreenDescriptor;
+use egui_wgpu::{RendererOptions, ScreenDescriptor};
 use wgpu::{CommandEncoder, Device, Queue, RenderPassDescriptor, TextureFormat, TextureView};
 use winit::window::Window;
 
@@ -20,14 +20,17 @@ impl GuiRenderer {
         let renderer = egui_wgpu::Renderer::new(
             device,
             output_color_format,
-            output_depth_format,
-            msaa_samples,
+            RendererOptions {
+                msaa_samples,
+                depth_stencil_format: output_depth_format,
+                ..Default::default()
+            }
         );
 
         let gui_ctx = egui::Context::default();
         let id = gui_ctx.viewport_id();
 
-        let input_state = egui_winit::State::new(gui_ctx, id, &window, None, None);
+        let input_state = egui_winit::State::new(gui_ctx, id, &window, None, None, None);
         Self {
             renderer,
             input_state,
@@ -58,7 +61,7 @@ impl GuiRenderer {
             self.renderer
                 .update_buffers(device, queue, encoder, &tris, &screen_desc);
             {
-                let mut gui_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+                let gui_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: target_view,
                         resolve_target: None,
@@ -66,13 +69,14 @@ impl GuiRenderer {
                             load: wgpu::LoadOp::Load,
                             store: wgpu::StoreOp::Store,
                         },
+                        depth_slice: None,
                     })],
                     depth_stencil_attachment: None,
                     label: Some("egui render pass"),
                     timestamp_writes: None,
                     occlusion_query_set: None,
                 });
-                self.renderer.render(&mut gui_pass, &tris, &screen_desc);
+                self.renderer.render(&mut gui_pass.forget_lifetime(), &tris, &screen_desc);
             }
         } else {
             log::warn!("Trying to render gui without a full output");
