@@ -1,6 +1,6 @@
 // David Kaméus - a tool for visualizing matrix transformations
-use nmle::run;
+use nmle_lib::run;
 
 fn main() -> anyhow::Result<()> {
-    pollster::block_on(run())
+    run()
 }
