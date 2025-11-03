@@ -140,7 +140,7 @@ pub fn run() -> anyhow::Result<()> {
     }
     #[cfg(target_arch = "wasm32")]
     {
-        console_log::init_with_level(log::Level::Trace).unwrap_throw();
+        console_log::init_with_level(log::Level::Debug).unwrap_throw();
     }
     test_logging();
 
