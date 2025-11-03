@@ -1,0 +1,15 @@
+{
+  "name": "nmle",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "nmle_lib_bg.wasm",
+    "nmle_lib.js",
+    "nmle_lib.d.ts"
+  ],
+  "main": "nmle_lib.js",
+  "types": "nmle_lib.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
